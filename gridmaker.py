@@ -124,7 +124,7 @@ if not os.path.exists(pqr_file_name):
 	pdb_file_name = "PDB_files/" + mol_name + ".pdb "
 	os.system( pdb2pqr + method + pdb_file_name + pqr_file_name )
 
-densities = [ 2.8]
+densities = [ 1. ]
 #stern_rad = np.linspace(.1,2.,15)
 
 for grid_dens in densities:

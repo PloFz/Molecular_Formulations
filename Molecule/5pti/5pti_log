@@ -1,0 +1,10 @@
+{'mesh_density': 1.0, 'n_of_elements': 9468, 'formulation': 'direct', 'energy': -331.511903259, 'total_time': 36.3144869804, 'iterations': 49, 'assemble_time': 25.3030679226, 'solver_time': 6.33723187447} 
+{'mesh_density': 2.0, 'n_of_elements': 38376, 'formulation': 'direct', 'energy': -311.700787858, 'total_time': 161.611576796, 'iterations': 44, 'assemble_time': 125.545027971, 'solver_time': 15.4875659943} 
+{'mesh_density': 2.8, 'n_of_elements': 75472, 'formulation': 'direct', 'energy': -309.108109919, 'total_time': 386.554307938, 'iterations': 44, 'assemble_time': 307.077194929, 'solver_time': 30.5661900043} 
+{'mesh_density': 4.0, 'n_of_elements': 154128, 'formulation': 'direct', 'energy': -307.886105192, 'total_time': 1016.47626519, 'iterations': 43, 'assemble_time': 849.389986038, 'solver_time': 61.9218201637} 
+{'mesh_density': 5.7, 'n_of_elements': 313696, 'formulation': 'direct', 'energy': -307.012473952, 'total_time': 2984.14338398, 'iterations': 43, 'assemble_time': 2649.01745987, 'solver_time': 131.408419132} 
+{'mesh_density': 1.0, 'n_of_elements': 9468, 'formulation': 'juffer', 'energy': -323.761706599, 'total_time': 61.4673318863, 'iterations': 18, 'assemble_time': 53.4461901188, 'solver_time': 3.36777901649} 
+{'mesh_density': 2.0, 'n_of_elements': 38376, 'formulation': 'juffer', 'energy': -307.799236972, 'total_time': 319.853682995, 'iterations': 19, 'assemble_time': 286.647365093, 'solver_time': 12.5835299492} 
+{'mesh_density': 2.8, 'n_of_elements': 75472, 'formulation': 'juffer', 'energy': -305.6264575, 'total_time': 769.4281919, 'iterations': 19, 'assemble_time': 692.303699017, 'solver_time': 25.8105630875} 
+{'mesh_density': 4.0, 'n_of_elements': 154128, 'formulation': 'juffer', 'energy': -304.663549038, 'total_time': 2057.12880802, 'iterations': 19, 'assemble_time': 1896.09986997, 'solver_time': 54.4900801182} 
+{'mesh_density': 5.7, 'n_of_elements': 313696, 'formulation': 'juffer', 'energy': -304.157248866, 'total_time': 9486.44384885, 'assemble_time': 5697.902879, 'solver_time': 3540.33288693, 'iterations': 19} 

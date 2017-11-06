@@ -3,7 +3,7 @@ import bempp.api
 import PBL
 
 mol_name = '5pti'
-densities = np.array([ .2, .5, .8, 1., 2., 2.8, 4. ])
+densities = np.array([ 5.7 ])
 
 energy_d = np.zeros(len(densities))
 energy_j = np.zeros(len(densities))
