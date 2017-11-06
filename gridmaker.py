@@ -112,7 +112,7 @@ def pqr2mesh(mol_name, density=3.,
 	return grid
 
 # Create a .msh file from a .pqr file
-mol_name = "5pti"
+mol_name = "1crn"
 mol_directory = "Molecule/" + mol_name + "/"
 pqr_file_name = mol_directory + mol_name + ".pqr"
 
@@ -129,7 +129,7 @@ densities = [ 1. ]
 
 for grid_dens in densities:
 	grid_in = pqr2mesh(mol_name, density=grid_dens)
-	#grid_ex = pqr2mesh(mol_name, density=grid_dens, stern=True)
+	grid_ex = pqr2mesh(mol_name, density=grid_dens, stern=True)
 	grid_in.plot()
 
 print 'Finished'
