@@ -1,4 +1,4 @@
-# File created by NanoShaper version 0.7.8 date Mon Nov  6 12:52:59 2017
+# File created by NanoShaper version 0.7.8 date Mon Nov  6 17:23:33 2017
 #vertex
 4038
     2.791    -0.054    -5.055    -0.422    -0.446    -0.789       0       1  0 

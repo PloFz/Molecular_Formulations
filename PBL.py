@@ -160,9 +160,10 @@ def juffer_formulation(dirichl_space, neumann_space, q, x_q, ep_in, ep_ex, kappa
 	return A, rhs
 
 def charges_potential(x, x_q, dirichl_space, neumann_space):
-	# return evaluation: phi_k = V[d_phi] - K[phi]
-	phi_surface  = bempp.api.GridFunction(dirichl_space, coefficients=x[:dirichl_space.global_dof_count])
-	dphi_surface = bempp.api.GridFunction(neumann_space, coefficients=x[dirichl_space.global_dof_count:])
+	# # return evaluation: phi_k = V[d_phi] - K[phi]
+	p1, p2 = np.split(x, 2)
+	phi_surface  = bempp.api.GridFunction(dirichl_space, coefficients=p1)
+	dphi_surface = bempp.api.GridFunction(neumann_space, coefficients=p2)
 
 	slp_ev = bempp.api.operators.potential.laplace.single_layer(neumann_space, x_q.transpose())
 	dlp_ev = bempp.api.operators.potential.laplace.double_layer(dirichl_space, x_q.transpose())

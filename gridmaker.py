@@ -31,7 +31,6 @@ def pqr2mesh(mol_name, density=3.,
 	pqr_file = mol_directory + '/' + mol_name + '.pqr'
 	xyzr_file = temp_directory + '/' + mol_name + '.xyzr'
 	mesh_name = '{}/{}_d{:04.1f}'.format(mesh_directory, mol_name, density)
-	export_file = mesh_name + '.msh'
 
 	# Create .xyzr
 	atoms_file = open(pqr_file, 'r').read().split('\n')
@@ -108,7 +107,7 @@ def pqr2mesh(mol_name, density=3.,
 
 	grid = factory.finalize()
 	
-	bempp.api.export(grid=grid, file_name=export_file)
+	bempp.api.export(grid=grid, file_name=mesh_name + '.msh')
 	return grid
 
 # Create a .msh file from a .pqr file
