@@ -19,7 +19,7 @@ def PBL_stern(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
 
     mesh_directory = 'Molecule/' + mol_name + '/mesh'
     mesh_file_in = '{}/{}_d{:04.1f}.msh'.format(mesh_directory, mol_name, mesh_density)
-    mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}.msh'.format(mesh_directory, mol_name, mesh_density)
+    mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}.msh'.format(mesh_directory, mol_name, mesh_density, probe_radius)
 
     grid_in = bempp.api.import_grid(mesh_file_in)
     grid_ex = bempp.api.import_grid(mesh_file_ex)
@@ -78,28 +78,28 @@ def PBL_stern(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     slp_ex = modified_helmholtz.single_layer(neumann_space_ex, dirichl_space_ex, dirichl_space_ex, kappa)
     dlp_ex = modified_helmholtz.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex, kappa)
 
-    ep = (ep_ex/ep_in)
+    ep = (ep_in/ep_ex)
     # Matrix Assembly
     blocked = bempp.api.BlockedOperator(4, 4)
-    blocked[0, 0] = 0.5*ident_in + dlp_in
-    blocked[0, 1] = - ep*slp_in
+    blocked[0, 0] = .5*idn_in + dlp_in
+    blocked[0, 1] = -slp_in
     #blocked[0, 2] = 0
     #blocked[0, 3] = 0
 
     #Original formulation
-    blocked[1, 0] = 0.5*ident_in - dlp_in   # dlp_in = dlp_1T1
-    blocked[1, 1] =  slp_in                 # slp_in = slp_1T1
+    blocked[1, 0] = .5*idn_in - dlp_in   # dlp_in = dlp_1T1
+    blocked[1, 1] =  ep*slp_in                 # slp_in = slp_1T1
     blocked[1, 2] =  dlp_2T1
     blocked[1, 3] = -slp_2T1
 
     blocked[2, 0] = -dlp_1T2
     blocked[2, 1] =  slp_1T2
-    blocked[2, 2] = 0.5*ident_ex + dlp_2T2
+    blocked[2, 2] = .5*idn_ex + dlp_2T2
     blocked[2, 3] = -slp_2T2
 
     #blocked[3, 0] = 0
     #blocked[3, 1] = 0
-    blocked[3, 2] = 0.5*ident_ex - dlp_ex
+    blocked[3, 2] = .5*idn_ex - dlp_ex
     blocked[3, 3] = slp_ex
     A = blocked.strong_form()
 
@@ -112,10 +112,10 @@ def PBL_stern(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     array_it, array_frame, it_count = np.array([]), np.array([]), 0
     x, info = gmres(A, rhs, callback=PBL.iteration_counter, tol=1e-3, maxiter=1000, restart = 1000)
     solver_time = time.time() - solver_time
-    print "The linear system was solved in {0} iterations in {:5.2f} seconds".format(it_count, solver_time)
+   # print "The linear system was solved in {0} iterations in {:5.2f} seconds".format(it_count, solver_time)
 
     # The following grid function stores the computed boundary data of the total field.
-    p1, p2 = np.split(x[:(dirichl_space_in+neumann_space_in)], 2) 
+    p1, p2 = np.split(x[:(dirichl_space_in.global_dof_count+neumann_space_in.global_dof_count)], 2) 
     total_dirichl_in = bempp.api.GridFunction(dirichl_space_in, coefficients=p1)
     total_neumann_in = bempp.api.GridFunction(neumann_space_in, coefficients=p2)
 
@@ -124,7 +124,7 @@ def PBL_stern(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     dlp_ev = bempp.api.operators.potential.laplace.double_layer(dirichl_space_in, x_q.transpose())
 
     # Evaluate potential at charges position & total dissolution energy
-    phi_q = (1./ep)*slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
+    phi_q = slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
     total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
 
     total_time = time.time() - total_time
