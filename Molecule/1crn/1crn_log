@@ -1,8 +1,0 @@
-{'mesh_density': 0.3, 'n_of_elements': 520, 'formulation': 'direct', 'energy': -194.391112728, 'total_time': 3.71892404556, 'iterations': 48, 'assemble_time': 2.53294491768, 'solver_time': 0.447463035583} 
-{'mesh_density': 0.6, 'n_of_elements': 2492, 'formulation': 'direct', 'energy': -106.1667038, 'total_time': 25.1887018681, 'iterations': 54, 'assemble_time': 19.038020134, 'solver_time': 2.67878985405} 
-{'mesh_density': 0.7, 'n_of_elements': 3408, 'formulation': 'direct', 'energy': -96.3591326279, 'total_time': 36.351172924, 'iterations': 54, 'assemble_time': 26.984058857, 'solver_time': 4.86465811729} 
-{'mesh_density': 1.0, 'n_of_elements': 7120, 'formulation': 'direct', 'energy': -83.1246198741, 'total_time': 82.9758479595, 'iterations': 55, 'assemble_time': 62.2153198719, 'solver_time': 11.1377909184} 
-{'mesh_density': 0.3, 'n_of_elements': 520, 'formulation': 'juffer', 'energy': -257.521580472, 'total_time': 7.58895087242, 'iterations': 19, 'assemble_time': 6.54874801636, 'solver_time': 0.302298069} 
-{'mesh_density': 0.6, 'n_of_elements': 2492, 'formulation': 'juffer', 'energy': -91.7831841334, 'total_time': 54.0322151184, 'iterations': 16, 'assemble_time': 49.2361700535, 'solver_time': 1.54150009155} 
-{'mesh_density': 0.7, 'n_of_elements': 3408, 'formulation': 'juffer', 'energy': -88.5653261104, 'total_time': 74.8516750336, 'iterations': 17, 'assemble_time': 67.2035839558, 'solver_time': 2.99151206017} 
-{'mesh_density': 1.0, 'n_of_elements': 7120, 'formulation': 'juffer', 'energy': -80.1995638692, 'total_time': 165.611975908, 'assemble_time': 148.208050966, 'solver_time': 7.0168170929, 'iterations': 18} 

@@ -111,7 +111,7 @@ def pqr2mesh(mol_name, density=3.,
 	return grid
 
 # Create a .msh file from a .pqr file
-mol_name = "1crn"
+mol_name = "7ry"
 mol_directory = "Molecule/" + mol_name + "/"
 pqr_file_name = mol_directory + mol_name + ".pqr"
 
@@ -123,12 +123,12 @@ if not os.path.exists(pqr_file_name):
 	pdb_file_name = "PDB_files/" + mol_name + ".pdb "
 	os.system( pdb2pqr + method + pdb_file_name + pqr_file_name )
 
-densities = [ 1. ]
-#stern_rad = np.linspace(.1,2.,15)
+st_r = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
+#stern_rad = np.linspace(.1, 2., 15)
 
-for grid_dens in densities:
-	grid_in = pqr2mesh(mol_name, density=grid_dens)
-	grid_ex = pqr2mesh(mol_name, density=grid_dens, stern=True)
-	grid_in.plot()
+for rad in st_r:
+#	grid_in = pqr2mesh(mol_name, density=grid_dens)
+	grid_ex = pqr2mesh(mol_name, density=3., stern=True, stern_radius = rad)
+#grid_in.plot()
 
 print 'Finished'
