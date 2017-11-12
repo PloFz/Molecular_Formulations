@@ -9,7 +9,7 @@ import os
 from scipy.sparse.linalg import gmres
 
 def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, 
-                formulation='stern_d', stern_radius=1.0, info=False):
+                formulation='stern_d', stern_radius=1.4, info=False):
     '''
     mol_name  : molecule name to call .pqr & .msh files from its directories
     mesh_density : mesh density from msms cration

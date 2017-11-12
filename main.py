@@ -6,17 +6,17 @@ import PBL
 import gc
 
 mol_name = '5pti'
-dens = np.array([ .8, 1., 2., 2.8, 4., 5.7 ])
-red = np.array([ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ])
+dens = np.array([ 1., 2., 2.8, 4., 5.7 ])
+#red = np.array([ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ])
 
 
-for i in range(len(dens)):
-	PBL.solvation_energy(mol_name, dens[i], info=True)
-	PBL.solvation_energy(mol_name, dens[i], formulation='juffer', info=True)
-	gc.collect()
+#for i in range(len(dens)):
+#	PBL.solvation_energy(mol_name, dens[i], info=True)
+#	PBL.solvation_energy(mol_name, dens[i], formulation='juffer', info=True)
+#	gc.collect()
 
-for i in range(len(red)):
-	PBL_stern.solvation_energy(mol_name, 4., stern_radius=red[i], info=True)
+for dd in dens:
+	PBL_stern.solvation_energy(mol_name, dd, info=True)
 	gc.collect()
 
 

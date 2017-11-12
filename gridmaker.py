@@ -124,13 +124,13 @@ if not os.path.exists(pqr_file_name):
 	os.system( pdb2pqr + method + pdb_file_name + pqr_file_name )
 
 
-dens = [ .8, 1., 2., 2.8, 4., 5.7 ]
-for den in dens:
-	grid_in = pqr2mesh(mol_name, density=den)
+#dens = [ .8, 1., 2., 2.8, 4., 5.7 ]
+#for den in dens:
+#	grid_in = pqr2mesh(mol_name, density=den)
 
-st_r = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
-for rad in st_r:
-	grid_ex = pqr2mesh(mol_name, density=4., stern=True, stern_radius = rad)
+st_d = [  1., 1.4, 2., 2.8, 4., 5.7 ]
+for ex_d in st_d:
+	grid_ex = pqr2mesh(mol_name, density=ex_d, stern=True, stern_radius=1.4)
 
 #grid_in.plot()
 
