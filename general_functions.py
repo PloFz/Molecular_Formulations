@@ -101,3 +101,27 @@ def charges_potential(x, x_q, dirichl_space, neumann_space):
 
 	return phi_q.real
 
+def run_pygbe(mol_name, mesh_density):
+	mol_directory = 'Molecule/' + mol_name
+	mesh_directory = mol_directory + '/mesh'
+
+	pqr_file = mol_directory + '/' + mol_name + '.pqr'
+
+	mesh_file_in = '{}/{}_d{:04.1f}'.format(mesh_directory, mol_name, mesh_density)
+	mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}'.format(mesh_directory, mol_name, mesh_density, stern_radius)
+
+	config_file = open('file.config', 'r').read()
+	param_file  = open('file.param', 'r').read()
+
+	config_file.replace('stern_file', mesh_file_ex)
+	config_file.replace('mmesh_file', mesh_file_in)
+	config_file.replace('pqr_file', pqr_file)
+
+	new_config = open(mol_directory + mol_name + 'config', 'w').write(config_file).close()
+	new_config = open(mol_directory + mol_name + 'param' , 'w').write(param_file).close()
+
+	os.mkdir('temp')
+	os.system('mv ' + mesh_directory + '/*.msh temp'  )
+	os.system('pygbe' + mol_directory)
+	os.system('mv temp/*.msh ' + mesh_directory )
+	os.system('rm -r temp')

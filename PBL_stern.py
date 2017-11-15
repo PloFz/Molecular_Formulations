@@ -100,7 +100,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     def green_func(x, n, domain_index, result):
         result[:] = np.sum(q/np.linalg.norm( x - x_q, axis=1 ))/(4.*np.pi*ep_in)
 
-    print "Proyecting charges over surface..."
+    print "Projecting charges over surface..."
     charged_grid_fun  = bempp.api.GridFunction(dirichl_space_in, fun=green_func)
 
     rhs = np.concatenate([charged_grid_fun.coefficients, 

@@ -5,20 +5,20 @@ import PBL_stern
 import PBL
 import gc
 
-mol_name = 'peptide'
+mol_name = '5pti'
 
-dens = np.array([ .8, 1., 2., 2.8, 4., 5.7 ])
+# dens = np.array([ .8, 1., 2., 2.8, 4., 5.7 ])
 
-for dd in dens:
-	PBL.solvation_energy(mol_name, dd, info=True)
-	PBL.solvation_energy(mol_name, dd, formulation='juffer', info=True)
-	PBL_stern.solvation_energy(mol_name, dd, info=True)
-	gc.collect()
+# for dd in dens:
+# 	PBL.solvation_energy(mol_name, dd, info=True)
+# 	PBL.solvation_energy(mol_name, dd, formulation='juffer', info=True)
+# 	PBL_stern.solvation_energy(mol_name, dd, info=True)
+# 	gc.collect()
 
-r_st = np.array([ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ])
-for rr in r_st:
-	PBL_stern.solvation_energy(mol_name, 5.7, stern_radius=rr, info=True)
-	gc.collect()
+# r_st = np.array([ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ])
+# for rr in r_st:
+# 	PBL_stern.solvation_energy(mol_name, 5.7, stern_radius=rr, info=True)
+# 	gc.collect()
 
 
 directory = 'Molecule/{}/'.format(mol_name)
@@ -96,17 +96,17 @@ plt.savefig(directory + 'Energy.png')
 
 
 time_general = plt.figure().add_subplot(111)
-time_general.plot(n_boundary_elements, times_d[:,0], 'r--', marker='o', label='direct assemble', color='k')
-time_general.plot(n_boundary_elements, times_d[:,1], 'r:', marker='o', label='direct solver', color='k')
-time_general.plot(n_boundary_elements, times_d[:,2], marker='o', label='direct total', color='k')
+time_general.loglog(n_boundary_elements, times_d[:,0], 'r--', marker='o', label='direct assemble', color='k')
+time_general.loglog(n_boundary_elements, times_d[:,1], 'r:', marker='o', label='direct solver', color='k')
+time_general.loglog(n_boundary_elements, times_d[:,2], marker='o', label='direct total', color='k')
 
-time_general.plot(n_boundary_elements, times_j[:,0], 'r--', marker='s', label='juffer assemble', color='k')
-time_general.plot(n_boundary_elements, times_j[:,1], 'r:', marker='s', label='juffer solver', color='k')
-time_general.plot(n_boundary_elements, times_j[:,2], marker='s', label='juffer total', color='k')
+time_general.loglog(n_boundary_elements, times_j[:,0], 'r--', marker='s', label='juffer assemble', color='k')
+time_general.loglog(n_boundary_elements, times_j[:,1], 'r:', marker='s', label='juffer solver', color='k')
+time_general.loglog(n_boundary_elements, times_j[:,2], marker='s', label='juffer total', color='k')
 
-time_general.plot(n_stern_1, times_s1[:,0], 'r--', marker='^', label='stern assemble', color='k')
-time_general.plot(n_stern_1, times_s1[:,1], 'r:', marker='^', label='stern solver', color='k')
-time_general.plot(n_stern_1, times_s1[:,2], marker='^', label='stern total', color='k')
+time_general.loglog(n_stern_1, times_s1[:,0], 'r--', marker='^', label='stern assemble', color='k')
+time_general.loglog(n_stern_1, times_s1[:,1], 'r:', marker='^', label='stern solver', color='k')
+time_general.loglog(n_stern_1, times_s1[:,2], marker='^', label='stern total', color='k')
 
 time_general.set_title('Time Consuming')
 time_general.set_xlabel('N of elements')
