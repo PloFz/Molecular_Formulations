@@ -111,7 +111,7 @@ def pqr2mesh(mol_name, density=3.,
 	return grid
 
 # Create a .msh file from a .pqr file
-mol_name = "peptide"
+mol_name = "5pti"
 mol_directory = "Molecule/" + mol_name + "/"
 pqr_file_name = mol_directory + mol_name + ".pqr"
 

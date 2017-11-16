@@ -101,27 +101,33 @@ def charges_potential(x, x_q, dirichl_space, neumann_space):
 
 	return phi_q.real
 
-def run_pygbe(mol_name, mesh_density):
+def run_pygbe(mol_name, mesh_density, stern_radius):
 	mol_directory = 'Molecule/' + mol_name
-	mesh_directory = mol_directory + '/mesh'
 
-	pqr_file = mol_directory + '/' + mol_name + '.pqr'
+	pqr_file =  mol_name + '.pqr'
 
-	mesh_file_in = '{}/{}_d{:04.1f}'.format(mesh_directory, mol_name, mesh_density)
-	mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}'.format(mesh_directory, mol_name, mesh_density, stern_radius)
+	mesh_file_in = 'mesh/{}_d{:04.1f}'.format(mol_name, mesh_density)
+	mesh_file_ex = 'mesh/{}_d{:04.1f}_strn-pr{:04.1f}'.format(mol_name, mesh_density, stern_radius)
 
-	config_file = open('file.config', 'r').read()
-	param_file  = open('file.param', 'r').read()
+	config_file = open('ExternalPrograms/pygbe/file.config', 'r').read()
+	param_file  = open('ExternalPrograms/pygbe/file.param', 'r').read()
 
-	config_file.replace('stern_file', mesh_file_ex)
-	config_file.replace('mmesh_file', mesh_file_in)
-	config_file.replace('pqr_file', pqr_file)
+	config_file = config_file.replace('stern_file', mesh_file_ex)
+	config_file = config_file.replace('mmesh_file', mesh_file_in)
+	config_file = config_file.replace('pqr_file', pqr_file)
 
-	new_config = open(mol_directory + mol_name + 'config', 'w').write(config_file).close()
-	new_config = open(mol_directory + mol_name + 'param' , 'w').write(param_file).close()
+	new_config = open(mol_directory + '/' + mol_name + '.config', 'w')
+	new_param  = open(mol_directory + '/' + mol_name + '.param' , 'w')
+	
+	new_config.write(config_file)
+	new_param.write(param_file)
+	
+	new_config.close()
+	new_param.close()
 
-	os.mkdir('temp')
-	os.system('mv ' + mesh_directory + '/*.msh temp'  )
-	os.system('pygbe' + mol_directory)
-	os.system('mv temp/*.msh ' + mesh_directory )
-	os.system('rm -r temp')
+	print 'mv ' + mol_directory + '/mesh/*.msh temp'
+	#os.mkdir('temp')
+	os.system('mv ' + mol_directory + '/mesh/*.msh temp/')
+	os.system('pygbe ' + mol_directory)
+	os.system('mv temp/*.msh ' + mol_directory + '/mesh/')
+	#os.system('rm -r temp')
