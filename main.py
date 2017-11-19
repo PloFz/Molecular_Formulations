@@ -123,4 +123,3 @@ stern_rad.set_xlabel('Stern Radius')
 stern_rad.set_ylabel(r'$\Delta$G  [kcal]')
 
 plt.savefig(directory + 'Stern.png')
-

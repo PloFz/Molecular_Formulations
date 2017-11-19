@@ -101,6 +101,7 @@ def charges_potential(x, x_q, dirichl_space, neumann_space):
 
 	return phi_q.real
 
+
 def run_pygbe(mol_name, mesh_density, stern_radius):
 	mol_directory = 'Molecule/' + mol_name
 

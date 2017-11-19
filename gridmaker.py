@@ -3,7 +3,7 @@ import bempp.api
 import os
 
 def pqr2mesh(mol_name, density=3.,
-			 probe_radius=1.4, min_area=1e-5, 
+			 probe_radius=1.4, min_area=1e-5,
 			 stern=False, stern_radius=1.):
 	'''
 	This function returns a bempp grid object and creates a .msh files in Mesh/ directory
@@ -18,6 +18,7 @@ def pqr2mesh(mol_name, density=3.,
 
 	# Directories
 	mol_directory = 'Molecule/' + mol_name
+	geom_directory = mol_directory + '/geometry'
 	mesh_directory = mol_directory + '/mesh'
 	nano_directory = 'ExternalPrograms/NanoShaper/'
 	temp_directory = 'temp/'
@@ -26,11 +27,14 @@ def pqr2mesh(mol_name, density=3.,
 		os.makedirs(temp_directory)
 	if not os.path.exists(mesh_directory):
 		os.makedirs(mesh_directory)
+	if not os.path.exists(geom_directory):
+		os.makedirs(geom_directory)
 
 	# Files
 	pqr_file = mol_directory + '/' + mol_name + '.pqr'
 	xyzr_file = temp_directory + '/' + mol_name + '.xyzr'
 	mesh_name = '{}/{}_d{:04.1f}'.format(mesh_directory, mol_name, density)
+	geom_name = '{}/{}_d{:04.1f}'.format(geom_directory, mol_name, density)
 
 	# Create .xyzr
 	atoms_file = open(pqr_file, 'r').read().split('\n')
@@ -44,6 +48,7 @@ def pqr2mesh(mol_name, density=3.,
 
 	if stern:
 		mesh_name += "_strn-pr{:04.1f}".format(stern_radius)
+		geom_name += "_strn-pr{:04.1f}".format(stern_radius)
 
 	# # Write msms command to create .vert & .face files
 	# msms, mode = "~/.msms_i86_64Linux2_2.6.1/msms.x86_64Linux2.2.6.1 ", "-no_header "
@@ -57,7 +62,7 @@ def pqr2mesh(mol_name, density=3.,
 
 	for line in config_file:
 		if 'XYZR_FileName' in line:
-			line = 'XYZR_FileName = ' + mol_name + '.xyzr \n'
+			line = 'XYZR_FileNae = ' + mol_name + '.xyzr \n'
 		elif 'Grid_scale' in line:
 			line = 'Grid_scale = {:04.1f} \n'.format(density)
 		elif 'Probe_Radius' in line:
@@ -72,12 +77,13 @@ def pqr2mesh(mol_name, density=3.,
 	os.system('./../ExternalPrograms/NanoShaper/NanoShaper')
 	os.chdir('..')
 
-	os.system('mv ' + temp_directory + '*.vert ' + mesh_name + '.vert')
-	os.system('mv ' + temp_directory + '*.face ' + mesh_name + '.face')
+	os.system('mv ' + temp_directory + '*.vert ' + geom_name + '.vert')
+	os.system('mv ' + temp_directory + '*.face ' + geom_name + '.face')
 	os.system('rm -r ' + temp_directory)
 
-	vertx_file = open(mesh_name + ".vert", 'r').read().split('\n')
-	faces_file = open(mesh_name + ".face", 'r').read().split('\n')
+	exit()
+	vertx_file = open(geom_name + ".vert", 'r').read().split('\n')
+	faces_file = open(geom_name + ".face", 'r').read().split('\n')
 
 	# Counters for small triangles, and total ignored area
 	xcount, atotal, a_excl = 0, 0., 0.
@@ -124,12 +130,13 @@ if not os.path.exists(pqr_file_name):
 	os.system( pdb2pqr + method + pdb_file_name + pqr_file_name )
 
 
-dens = [ .8, 1., 2., 2.8, 4., 5.7 ]
+#dens = [ .8, 1., 2., 2.8, 4., 5.7 ]
+dens = [ 1. ]
 for dd in dens:
 	grid_in = pqr2mesh(mol_name, density=dd)
 	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4)
-
-r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
+r_st = [ 1.4 ]
+#r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
 for rr in r_st:
 	grid_ex = pqr2mesh(mol_name, density=5.7, stern=True, stern_radius=rr)
 
