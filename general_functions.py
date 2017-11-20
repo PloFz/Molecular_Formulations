@@ -1,4 +1,9 @@
-import numpy as np, bempp.api, inspect, time, PBL, os
+import numpy as np
+import bempp.api
+import inspect
+import time
+import PBL
+import os
 
 def read_grid_value(mol_name, mesh_density, formulation='direct'):
 	mesh_directory = 'Molecule/' + mol_name + '/mesh'
@@ -108,8 +113,8 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	config_file = open('ExternalPrograms/pygbe/file.config', 'r').read()
 	param_file  = open('ExternalPrograms/pygbe/file.param', 'r').read()
 
-	config_file = config_file.replace('stern_file', mesh_file_ex + '\t')
-	config_file = config_file.replace('mmesh_file', mesh_file_in + '\t')
+	config_file = config_file.replace('stern_file', mesh_file_ex)
+	config_file = config_file.replace('mmesh_file', mesh_file_in)
 	config_file = config_file.replace('pqr_file', pqr_file)
 
 	new_config = open(mol_directory + '/' + mol_name + '.config', 'w')
@@ -121,4 +126,9 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	new_config.close()
 	new_param.close()
 
-	os.system('pygbe ' + mol_directory)
+	result_file = 'pygbe_results'
+	os.system('pygbe ' + mol_directory + ' > ' + result_file )
+	
+	energy_file = open(result_file, 'r').read().split('\n')
+	energy_line = [float(line.split()[2]) for line in energy_file if 'Esolv' in line][0]
+	os.system('rm ' + result_file)

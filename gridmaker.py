@@ -71,6 +71,7 @@ def pqr2mesh(mol_name, density=3.,
 			new_config.write(line)
 		
 		new_config.close()
+		config_file.close()
 
 		os.chdir(temp_directory)
 		os.system('ls')
@@ -138,7 +139,7 @@ for dd in dens:
 # r_st = [ 1.4 ]
 # #r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
 # for rr in r_st:
-# 	grid_ex = pqr2mesh(mol_name, density=5.7, stern=True, stern_radius=rr, prigram='msms')
+# 	grid_ex = pqr2mesh(mol_name, density=5.7, stern=True, stern_radius=rr, program='msms')
 
 #grid_in.plot()
 
