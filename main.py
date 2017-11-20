@@ -1,9 +1,4 @@
-import general_functions as gf
-import numpy as np
-import bempp.api
-import PBL_stern
-import PBL
-import gc
+import general_functions as gf, numpy as np, bempp.api, PBL_stern, PBL, gc
 
 mol_name = '5pti'
 
@@ -32,7 +27,6 @@ times_d = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 								 for l in dicts if l['formulation']=='direct'])
 energy_d = np.array([l['energy'] for l in dicts if l['formulation']=='direct'])
 
-
 times_j = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 								 for l in dicts if l['formulation']=='juffer'])
 energy_j = np.array([l['energy'] for l in dicts if l['formulation']=='juffer'])
@@ -41,16 +35,16 @@ energy_j = np.array([l['energy'] for l in dicts if l['formulation']=='juffer'])
 
 n_stern_1 = np.array([l['n_of_elements']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4])
-energy_s1 = np.array([l['energy'] 
+energy_s1 = np.array([l['energy']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4])
 times_s1 = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4])
 
 n_stern_2 = np.array([l['n_of_elements']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4])
-energy_s2 = np.array([l['energy'] 
+energy_s2 = np.array([l['energy']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4])
-radius_s2 = np.array([l['stern_radius'] 
+radius_s2 = np.array([l['stern_radius']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4])
 
 

@@ -1,9 +1,4 @@
-import numpy as np
-import bempp.api
-import inspect
-import time
-import PBL
-import os
+import numpy as np, bempp.api, inspect, time, PBL, os
 
 def read_grid_value(mol_name, mesh_density, formulation='direct'):
 	mesh_directory = 'Molecule/' + mol_name + '/mesh'
@@ -107,14 +102,14 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 
 	pqr_file =  mol_name + '.pqr'
 
-	mesh_file_in = 'mesh/{}_d{:04.1f}'.format(mol_name, mesh_density)
-	mesh_file_ex = 'mesh/{}_d{:04.1f}_strn-pr{:04.1f}'.format(mol_name, mesh_density, stern_radius)
+	mesh_file_in = 'geometry/{}_d{:04.1f}'.format(mol_name, mesh_density)
+	mesh_file_ex = 'geometry/{}_d{:04.1f}_strn-pr{:04.1f}'.format(mol_name, mesh_density, stern_radius)
 
 	config_file = open('ExternalPrograms/pygbe/file.config', 'r').read()
 	param_file  = open('ExternalPrograms/pygbe/file.param', 'r').read()
 
-	config_file = config_file.replace('stern_file', mesh_file_ex)
-	config_file = config_file.replace('mmesh_file', mesh_file_in)
+	config_file = config_file.replace('stern_file', mesh_file_ex + '\t')
+	config_file = config_file.replace('mmesh_file', mesh_file_in + '\t')
 	config_file = config_file.replace('pqr_file', pqr_file)
 
 	new_config = open(mol_directory + '/' + mol_name + '.config', 'w')
@@ -126,9 +121,4 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	new_config.close()
 	new_param.close()
 
-	print 'mv ' + mol_directory + '/mesh/*.msh temp'
-	#os.mkdir('temp')
-	os.system('mv ' + mol_directory + '/mesh/*.msh temp/')
 	os.system('pygbe ' + mol_directory)
-	os.system('mv temp/*.msh ' + mol_directory + '/mesh/')
-	#os.system('rm -r temp')

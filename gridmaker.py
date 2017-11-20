@@ -1,10 +1,8 @@
-import numpy as np
-import bempp.api
-import os
+import numpy as np, bempp.api, os
 
 def pqr2mesh(mol_name, density=3.,
 			 probe_radius=1.4, min_area=1e-5,
-			 stern=False, stern_radius=1.):
+			 stern=False, stern_radius=1., program='nano'):
 	'''
 	This function returns a bempp grid object and creates a .msh files in Mesh/ directory
 	from a .pqr file, the following inputs can me modified:
@@ -18,10 +16,10 @@ def pqr2mesh(mol_name, density=3.,
 
 	# Directories
 	mol_directory = 'Molecule/' + mol_name
-	geom_directory = mol_directory + '/geometry'
 	mesh_directory = mol_directory + '/mesh'
+	geom_directory = mol_directory + '/geometry'
 	nano_directory = 'ExternalPrograms/NanoShaper/'
-	temp_directory = 'temp/'
+	temp_directory = 'mesh_temp/'
 
 	if not os.path.exists(temp_directory):
 		os.makedirs(temp_directory)
@@ -45,43 +43,45 @@ def pqr2mesh(mol_name, density=3.,
 			if stern:
 				line[9] = str(float(line[9]) + stern_radius)	# add 'stern' to radius
 			xyrz_data.write(line[5]+"\t"+line[6]+"\t"+line[7]+"\t"+line[9]+"\n")
+	xyrz_data.close()
 
 	if stern:
 		mesh_name += "_strn-pr{:04.1f}".format(stern_radius)
 		geom_name += "_strn-pr{:04.1f}".format(stern_radius)
 
-	# # Write msms command to create .vert & .face files
-	# msms, mode = "~/.msms_i86_64Linux2_2.6.1/msms.x86_64Linux2.2.6.1 ", "-no_header "
-	# prob_rad, dens_msh = " -probe_radius " + str(probe_radius), " -density " + str(density)
-	# os.system( msms + mode + "-if " + xyzr_file + " -of "+ mesh_name + prob_rad + dens_msh )
+	if program == 'msms':
+		# Write msms command to create .vert & .face files
+		msms, mode = "~/.msms_i86_64Linux2_2.6.1/msms.x86_64Linux2.2.6.1 ", "-no_header "
+		prob_rad, dens_msh = " -probe_radius " + str(probe_radius), " -density " + str(density)
+		os.system( msms + mode + "-if " + xyzr_file + " -of "+ geom_name)
 
 	# Execute NanoShaper
-	#os.system('mv ' + xyzr_file + ' ExternalPrograms/NanoShaper/')
-	config_file = open('ExternalPrograms/NanoShaper/config', 'r')
-	new_config = open( temp_directory + 'surfaceConfiguration.prm', 'w')
+	if program == 'nano':
+		#os.system('mv ' + xyzr_file + ' ExternalPrograms/NanoShaper/')
+		config_file = open('ExternalPrograms/NanoShaper/config', 'r')
+		new_config = open( temp_directory + 'surfaceConfiguration.prm', 'w')
 
-	for line in config_file:
-		if 'XYZR_FileName' in line:
-			line = 'XYZR_FileNae = ' + mol_name + '.xyzr \n'
-		elif 'Grid_scale' in line:
-			line = 'Grid_scale = {:04.1f} \n'.format(density)
-		elif 'Probe_Radius' in line:
-			line = 'Probe_Radius = {:03.1f} \n'.format(probe_radius)
+		for line in config_file:
+			if 'XYZR_FileName' in line:
+				line = 'XYZR_FileNae = ' + mol_name + '.xyzr \n'
+			elif 'Grid_scale' in line:
+				line = 'Grid_scale = {:04.1f} \n'.format(density)
+			elif 'Probe_Radius' in line:
+				line = 'Probe_Radius = {:03.1f} \n'.format(probe_radius)
+			new_config.write(line)
 		
-		new_config.write(line)
-	
-	xyrz_data.close()
-	new_config.close()
+		new_config.close()
 
-	os.chdir(temp_directory)
-	os.system('./../ExternalPrograms/NanoShaper/NanoShaper')
-	os.chdir('..')
+		os.chdir(temp_directory)
+		os.system('ls')
+		os.system('head surfaceConfiguration.prm')
+		os.system('./../ExternalPrograms/NanoShaper/NanoShaper')
+		os.chdir('..')
 
-	os.system('mv ' + temp_directory + '*.vert ' + geom_name + '.vert')
-	os.system('mv ' + temp_directory + '*.face ' + geom_name + '.face')
-	os.system('rm -r ' + temp_directory)
+		os.system('mv ' + temp_directory + '*.vert ' + geom_name + '.vert')
+		os.system('mv ' + temp_directory + '*.face ' + geom_name + '.face')
+		os.system('rm -r ' + temp_directory)
 
-	exit()
 	vertx_file = open(geom_name + ".vert", 'r').read().split('\n')
 	faces_file = open(geom_name + ".face", 'r').read().split('\n')
 
@@ -102,7 +102,7 @@ def pqr2mesh(mol_name, density=3.,
 		line = line.split()
 		if len(line) != 5: continue
 		A, B, C, _, _ = np.array(line).astype(int)
-		side1, side2  = vertex[B-1]-vertex[A-1], vertex[C-1]-vertex[A-1]
+		side1, side2  = vertex[B-1] - vertex[A-1], vertex[C-1] - vertex[A-1]
 		face_area = 0.5*np.linalg.norm(np.cross(side1, side2))
 		atotal += face_area
 		if face_area > min_area:
@@ -133,12 +133,12 @@ if not os.path.exists(pqr_file_name):
 #dens = [ .8, 1., 2., 2.8, 4., 5.7 ]
 dens = [ 1. ]
 for dd in dens:
-	grid_in = pqr2mesh(mol_name, density=dd)
-	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4)
-r_st = [ 1.4 ]
-#r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
-for rr in r_st:
-	grid_ex = pqr2mesh(mol_name, density=5.7, stern=True, stern_radius=rr)
+	grid_in = pqr2mesh(mol_name, density=dd, program='msms')
+	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4, program='msms')
+# r_st = [ 1.4 ]
+# #r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
+# for rr in r_st:
+# 	grid_ex = pqr2mesh(mol_name, density=5.7, stern=True, stern_radius=rr, prigram='msms')
 
 #grid_in.plot()
 
