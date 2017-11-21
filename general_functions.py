@@ -118,17 +118,18 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	config_file = config_file.replace('pqr_file', pqr_file)
 
 	new_config = open(mol_directory + '/' + mol_name + '.config', 'w')
-	new_param  = open(mol_directory + '/' + mol_name + '.param' , 'w')
-	
 	new_config.write(config_file)
-	new_param.write(param_file)
-	
 	new_config.close()
+
+	new_param  = open(mol_directory + '/' + mol_name + '.param' , 'w')
+	new_param.write(param_file)
 	new_param.close()
 
 	result_file = 'pygbe_results'
-	os.system('pygbe ' + mol_directory + ' > ' + result_file )
-	
+	os.system('pygbe {} > {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
-	energy_line = [float(line.split()[2]) for line in energy_file if 'Esolv' in line][0]
-	os.system('rm ' + result_file)
+
+	energy = [float(line.split()[2]) for line in energy_file if 'Esolv' in line]
+	if len(energy) != 1: raise Exception("PyGBeError: can't read output (Esolv)")
+	else: os.system('rm ' + result_file)
+	
