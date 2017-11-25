@@ -129,7 +129,18 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	os.system('pygbe {} > {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
 
-	energy = [float(line.split()[2]) for line in energy_file if 'Esolv' in line]
-	if len(energy) != 1: raise Exception("PyGBeError: can't read output (Esolv)")
-	else: os.system('rm ' + result_file)
-	
+	if 'Time' in result_file[-2]:
+		if info:
+			info_dict = {}
+			info_dict['mol_name'] = mol_name
+			info_dict['mesh_density'] = mesh_density
+			info_dict['n_of_elements'] = result_file[20]
+			info_dict['n_of_elements_ex'] = result_file[34]
+			info_dict['formulation'] = 'PyGBe'
+			info_dict['energy'] = float(result_file[20].split()[2])
+			info_dict['solver_time'] = float(result_file[-24].split()[3][:-1])
+			info_dict['total_time'] = float(result_file[-2].split()[2])
+			info_dict['iterations'] = int(result_file[-35].split()[1][:-1])
+			info_dict['stern_radius'] = stern_radius
+
+        save_log(mol_name, info_dict)
