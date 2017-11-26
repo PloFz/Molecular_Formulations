@@ -102,7 +102,7 @@ def charges_potential(x, x_q, dirichl_space, neumann_space):
 	return phi_q.real
 
 
-def run_pygbe(mol_name, mesh_density, stern_radius):
+def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	mol_directory = 'Molecule/' + mol_name
 
 	pqr_file =  mol_name + '.pqr'
@@ -126,10 +126,13 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 	new_param.close()
 
 	result_file = 'pygbe_results'
+	print 'Runing PyGBe'
 	os.system('pygbe {} > {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
-
-	if 'Time' in result_file[-2]:
+	
+	print energy_file[-2]
+	if 'Time' in energy_file[-2]:
+		print 'time_check'
 		if info:
 			info_dict = {}
 			info_dict['mol_name'] = mol_name
@@ -143,4 +146,6 @@ def run_pygbe(mol_name, mesh_density, stern_radius):
 			info_dict['iterations'] = int(result_file[-35].split()[1][:-1])
 			info_dict['stern_radius'] = stern_radius
 
-        save_log(mol_name, info_dict)
+        		save_log(mol_name, info_dict)
+			print 'info dicttt'
+	print 'PyGBe Finished'
