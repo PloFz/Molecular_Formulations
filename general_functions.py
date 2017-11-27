@@ -54,7 +54,7 @@ def write_dict(mol_name, _info, log_file):
 
 	for key in _info:
 		log_file.write(", '{}': {}".format(str(key), str(_info[key])))
-	log_file.write("} \n")
+	log_file.write("}\n")
 
 def save_log(mol_name, info):
 	log_path = 'Molecule/{}/{}_log'.format(mol_name, mol_name)
@@ -71,8 +71,8 @@ def save_log(mol_name, info):
 				d = eval(line)
 				if d['mesh_density']!=info['mesh_density'] or d['formulation']!=info['formulation']:
 					dicts.append(d)
-				elif d['formulation']=='stern_d':
-					if info['formulation']=='stern_d' and d['stern_radius']!=info['stern_radius']:
+				elif d['formulation']=='stern_d' or d['formulation']=='PyGBe':
+					if d['stern_radius']!=info['stern_radius']:
 						dicts.append(d)
 
 	info_temp = info.copy()
@@ -130,22 +130,19 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	os.system('pygbe {} > {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
 	
-	print energy_file[-2]
 	if 'Time' in energy_file[-2]:
-		print 'time_check'
 		if info:
 			info_dict = {}
 			info_dict['mol_name'] = mol_name
 			info_dict['mesh_density'] = mesh_density
-			info_dict['n_of_elements'] = result_file[20]
-			info_dict['n_of_elements_ex'] = result_file[34]
+			info_dict['n_of_elements'] = energy_file[20].split()[0]
+			info_dict['n_of_elements_ex'] = energy_file[34].split()[0]
 			info_dict['formulation'] = 'PyGBe'
-			info_dict['energy'] = float(result_file[20].split()[2])
-			info_dict['solver_time'] = float(result_file[-24].split()[3][:-1])
-			info_dict['total_time'] = float(result_file[-2].split()[2])
-			info_dict['iterations'] = int(result_file[-35].split()[1][:-1])
+			info_dict['energy'] = float(energy_file[-6].split()[2])
+			info_dict['solver_time'] = float(energy_file[-24].split()[3][:-1])
+			info_dict['total_time'] = float(energy_file[-2].split()[2])
+			info_dict['iterations'] = int(energy_file[-35].split()[1][:-1])
 			info_dict['stern_radius'] = stern_radius
 
         		save_log(mol_name, info_dict)
-			print 'info dicttt'
 	print 'PyGBe Finished'
