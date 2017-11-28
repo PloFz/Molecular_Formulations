@@ -98,7 +98,7 @@ def pqr2mesh(mol_name, density=3.,
 	    vertex = np.vstack(( vertex, np.array([line[0:3]]).astype(float) ))
 	    factory.insert_vertex(vertex[-1])
 
-	# Grid assamble, exclude elements < min_area
+	# Grid assemble, exclude elements < min_area
 	for line in faces_file:
 		line = line.split()
 		if len(line) != 5: continue
@@ -128,14 +128,14 @@ if not os.path.exists(mol_directory):
 if not os.path.exists(pqr_file_name):
 	pdb2pqr, method = "~/.pdb2pqr-linux-bin64-2.1.0/pdb2pqr ", "--ff=amber "
 	pdb_file_name = "PDB_files/" + mol_name + ".pdb "
-	os.system( pdb2pqr + method + pdb_file_name + pqr_file_name )
+	os.system(pdb2pqr + method + pdb_file_name + pqr_file_name)
 
 
-dens = [ 4.]
+dens = np.array([ .8, 1., 2., 2.8, 4., 5.7 ])
 for dd in dens:
 	grid_in = pqr2mesh(mol_name, density=dd, program='msms')
 	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4, program='msms')
-# r_st = [ 1.4 ]
+
 r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
 for rr in r_st:
  	grid_ex = pqr2mesh(mol_name, density=4., stern=True, stern_radius=rr, program='msms')

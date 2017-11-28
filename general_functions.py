@@ -130,13 +130,13 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	os.system('pygbe {} > {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
 	
-	if 'Time' in energy_file[-2]:
+	if 'Time' in energy_file[-2]:	# bad n poor check
 		if info:
 			info_dict = {}
 			info_dict['mol_name'] = mol_name
 			info_dict['mesh_density'] = mesh_density
-			info_dict['n_of_elements'] = energy_file[20].split()[0]
-			info_dict['n_of_elements_ex'] = energy_file[34].split()[0]
+			info_dict['n_of_elements'] = float(energy_file[20].split()[0])
+			info_dict['n_of_elements_ex'] = float(energy_file[34].split()[0])
 			info_dict['formulation'] = 'PyGBe'
 			info_dict['energy'] = float(energy_file[-6].split()[2])
 			info_dict['solver_time'] = float(energy_file[-24].split()[3][:-1])
@@ -144,5 +144,5 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 			info_dict['iterations'] = int(energy_file[-35].split()[1][:-1])
 			info_dict['stern_radius'] = stern_radius
 
-        		save_log(mol_name, info_dict)
+        	save_log(mol_name, info_dict)
 	print 'PyGBe Finished'
