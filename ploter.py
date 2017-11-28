@@ -24,6 +24,15 @@ energy_s1 = [l['energy'] for l in dicts if l['formulation']=='stern_d' and l['st
 times_s1 = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4])
 
+n_pygbe_1 = [l['n_of_elements']
+						 for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4]
+energy_pg = [l['energy'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4]
+times_pg = np.array([[l['solver_time'], l['total_time']]
+						 for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4])
+
+print n_pygbe_1
+print energy_pg
+
 n_stern_2 = [l['n_of_elements']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4]
 energy_s2 = [l['energy'] for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4]
@@ -38,9 +47,12 @@ radius_pr = [l['stern_radius']
 rich_energy_d, _, _ = gf.richardson_extrapolation(energy_d, n_boundary_elements)
 rich_energy_j, _, _ = gf.richardson_extrapolation(energy_j, n_boundary_elements)
 rich_energy_s, _, _ = gf.richardson_extrapolation(energy_s1, n_stern_1)
+#rich_energy_p, _, _ = gf.richardson_extrapolation(energy_pg, n_pygbe_1)
+
 r_solution_d = rich_energy_d*np.ones(len(n_boundary_elements))
 r_solution_j = rich_energy_j*np.ones(len(n_boundary_elements))
 r_solution_s = rich_energy_s*np.ones(len(n_boundary_elements))
+#r_solution_p = rich_energy_p*np.ones(len(n_boundary_elements))
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -52,17 +64,21 @@ params = {'figure.figsize':  (7, 6),
           'ytick.labelsize': 10,
 		  'legend.fontsize': 10,
 		  'lines.linewidth': .5,
+		  'lines.color': 'k',
 		  'legend.loc': 'upper left'}
 plt.rcParams.update(params)
 
 energy_rslt = plt.figure().add_subplot(111)
 energy_rslt.plot(n_boundary_elements, energy_d, marker='o', label='direct', color='k')
 energy_rslt.plot(n_boundary_elements, energy_j, marker='s', label='Juffer', color='k')
-energy_rslt.plot(n_stern_1, energy_s1, marker='^', label='Stern', color='k')
+#energy_rslt.plot(n_stern_1, energy_s1, marker='^', label='Stern', color='k')
+energy_rslt.plot(n_pygbe_1, energy_pg, marker='x', label='PyGBe', color='k')
 
 energy_rslt.plot(n_boundary_elements, r_solution_d, 'r--', marker='o', color='k')
 energy_rslt.plot(n_boundary_elements, r_solution_j, 'r--', marker='s', color='k')
-energy_rslt.plot(n_boundary_elements, r_solution_s, 'r--', marker='s', color='k')
+#energy_rslt.plot(n_boundary_elements, r_solution_s, 'r--', marker='s', color='k')
+#energy_rslt.plot(n_boundary_elements, r_solution_p, 'r--', marker='x', color='k')
+
 
 energy_rslt.set_title('Mesh Convergence')
 energy_rslt.set_xlabel('N of elements')
