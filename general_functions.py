@@ -126,9 +126,9 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	new_param.close()
 
 	result_file = 'pygbe_results'
-	print '\nRuning PyGBe for ' + mesh_name
-	print 'Stern Rad: ' + stern_radius
-	print 'Mesh Dens: ' + mesh_density
+	print '\nRuning PyGBe for ' + mol_name
+	print 'Stern Rad: ' + str(stern_radius)
+	print 'Mesh Dens: ' + str(mesh_density)
 	os.system('pygbe {} 2>&1 | tee {}'.format(mol_directory, result_file))
 	energy_file = open(result_file, 'r').read().split('\n')
 	

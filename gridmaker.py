@@ -53,7 +53,7 @@ def pqr2mesh(mol_name, density=3.,
 		# Write msms command to create .vert & .face files
 		msms, mode = "~/.msms_i86_64Linux2_2.6.1/msms.x86_64Linux2.2.6.1 ", "-no_header "
 		prob_rad, dens_msh = " -probe_radius " + str(probe_radius), " -density " + str(density)
-		os.system( msms + mode + "-if " + xyzr_file + " -of "+ geom_name)
+		os.system( msms + mode + prob_rad + dens_msh + " -if " + xyzr_file + " -of " + geom_name)
 
 	# Execute NanoShaper
 	if program == 'nano':
@@ -81,7 +81,8 @@ def pqr2mesh(mol_name, density=3.,
 
 		os.system('mv ' + temp_directory + '*.vert ' + geom_name + '.vert')
 		os.system('mv ' + temp_directory + '*.face ' + geom_name + '.face')
-		os.system('rm -r ' + temp_directory)
+
+	os.system('rm -r ' + temp_directory)
 
 	vertx_file = open(geom_name + ".vert", 'r').read().split('\n')
 	faces_file = open(geom_name + ".face", 'r').read().split('\n')
