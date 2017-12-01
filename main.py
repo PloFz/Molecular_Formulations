@@ -11,6 +11,8 @@ for dd in dens:
  	gc.collect()
  	PBL_stern.solvation_energy(mol_name, dd, info=True)
  	gc.collect()
+ 	PBL_stern.solvation_energy(mol_name, dd, formulation='asc', info=True)
+ 	gc.collect()
 	gf.run_pygbe(mol_name, dd, 1.4, info=True)
  	gc.collect()
 
@@ -19,6 +21,8 @@ r_st = np.array([ .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ])
 
 for rr in r_st:
  	PBL_stern.solvation_energy(mol_name, 32., stern_radius=rr, info=True)
+ 	gc.collect()
+ 	PBL_stern.solvation_energy(mol_name, 32., stern_radius=rr, formulation='asc', info=True)
  	gc.collect()
  	gf.run_pygbe(mol_name, 32., rr, info=True)
  	gc.collect()

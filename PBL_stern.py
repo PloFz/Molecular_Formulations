@@ -1,12 +1,4 @@
-import general_functions as gf
-import numpy as np
-import bempp.api
-import inspect
-import time
-import PBL
-import os
-
-from scipy.sparse.linalg import gmres
+import general_functions as gf, numpy as np, bempp.api, inspect, time, PBL, os
 
 def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, 
                      formulation='stern_d', stern_radius=1.4, info=False):
@@ -44,38 +36,46 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     print "Assembling Matrix"
     matrix_time = time.time()
 
-    if formulation ==' stern_d':
+    if formulation == 'stern_d':
         A, rhs = stern_formulation(dirichl_space_in, neumann_space_in, 
                                    dirichl_space_ex, neumann_space_ex, 
                                    ep_in, ep_ex, q, x_q, kappa)
 
-    elif formulation == 'asc_stern':
-        A, rhs = stern_formulation(neumann_space_in, dirichl_space_ex, neumann_space_ex, 
-                                   ep_in, ep_ex, q, x_q, kappa)
+    elif formulation == 'asc':
+        A, rhs = stern_asc(neumann_space_in, dirichl_space_ex, neumann_space_ex, 
+                           ep_in, ep_ex, q, x_q, kappa)
 
     matrix_time = time.time() - matrix_time
     print "Assamble time: {:5.2f}".format(matrix_time)
 
     # Solver GMRES
     solver_time = time.time()
+    from scipy.sparse.linalg import gmres
     global array_it, array_frame, it_count
     array_it, array_frame, it_count = np.array([]), np.array([]), 0
     x, _ = gmres(A, rhs, callback=iteration_counter, tol=1e-3, maxiter=1000, restart = 1000)
     solver_time = time.time() - solver_time
     print "The linear system was solved in {:5.2f} seconds and {} iteration".format(solver_time, it_count)
 
-    # The following grid function stores the computed boundary data of the total field.
-    p1, p2 = np.split(x[:(dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count)], 2) 
-    total_dirichl_in = bempp.api.GridFunction(dirichl_space_in, coefficients=p1)
-    total_neumann_in = bempp.api.GridFunction(neumann_space_in, coefficients=p2)
-
-    # Calculate potentials in the coordinates of the atoms
     from bempp.api.operators import potential
-    slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
-    dlp_ev = potential.laplace.double_layer(dirichl_space_in, x_q.transpose())
+    if formulation == 'stern_d':
+        # The following grid function stores the computed boundary data of the total field.
+        p1, p2 = np.split(x[:(dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count)], 2) 
+        total_dirichl_in = bempp.api.GridFunction(dirichl_space_in, coefficients=p1)
+        total_neumann_in = bempp.api.GridFunction(neumann_space_in, coefficients=p2)
 
-    # Evaluate potential at charges position & total dissolution energy
-    phi_q = slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
+        # Calculate potentials in the coordinates of the atoms
+        slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
+        dlp_ev = potential.laplace.double_layer(dirichl_space_in, x_q.transpose())
+
+        # Evaluate potential at charges position & total dissolution energy
+        phi_q = slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
+
+    elif formulation == 'asc':
+        sigma_in = (ep_in/ep_ex - 1.)*x[:neumann_space_in.global_dof_count]
+        slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
+        phi_q =  slp_ev*sigma_in 
+
     total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
 
     total_time = time.time() - total_time
@@ -169,7 +169,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     return A, rhs
 
 
-def stern_1p2(sigma_space_in, dirichl_space_ex, neumann_space_ex, 
+def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex, 
               ep_in, ep_ex, q, x_q, kappa):
 
     # Functions to proyect the carges potential to the boundary with constants
