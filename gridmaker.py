@@ -125,17 +125,17 @@ pqr_file_name = mol_directory + mol_name + ".pqr"
 
 # If its a new molecule, create a directory and a .pqr file from a .pdb with pdb2pqr
 if not os.path.exists(mol_directory):
-	os.makedirs(mol_directory)
+	os.makedirs(mol_directory) 
 if not os.path.exists(pqr_file_name):
 	pdb2pqr, method = "~/.pdb2pqr-linux-bin64-2.1.0/pdb2pqr ", "--ff=amber "
 	pdb_file_name = "PDB_files/" + mol_name + ".pdb "
 	os.system(pdb2pqr + method + pdb_file_name + pqr_file_name)
 
 
-#dens = np.array([ 2., 4., 8., 16., 32., 64. ])
-#for dd in dens:
-#	grid_in = pqr2mesh(mol_name, density=dd, program='msms')
-#	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4, program='msms')
+dens = np.array([ 2., 4., 8., 16., 32., 64. ])
+for dd in dens:
+	grid_in = pqr2mesh(mol_name, density=dd, program='msms')
+	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4, program='msms')
 
 r_st = [ .1, .2, .4, .6, .8, 1.2, 1.5, 2., 3., 4. ]
 for rr in r_st:

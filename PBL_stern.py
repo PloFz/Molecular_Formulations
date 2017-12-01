@@ -9,7 +9,7 @@ import os
 from scipy.sparse.linalg import gmres
 
 def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, 
-                formulation='stern_d', stern_radius=1.4, info=False):
+                     formulation='stern_d', stern_radius=1.4, info=False):
     '''
     mol_name  : molecule name to call .pqr & .msh files from its directories
     mesh_density : mesh density from msms cration
@@ -43,9 +43,16 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
 
     print "Assembling Matrix"
     matrix_time = time.time()
-    A, rhs = stern_formulation(dirichl_space_in, neumann_space_in, 
-                               dirichl_space_ex, neumann_space_ex, 
-                               ep_in, ep_ex, q, x_q, kappa)
+
+    if formulation ==' stern_d':
+        A, rhs = stern_formulation(dirichl_space_in, neumann_space_in, 
+                                   dirichl_space_ex, neumann_space_ex, 
+                                   ep_in, ep_ex, q, x_q, kappa)
+
+    elif formulation == 'asc_stern':
+        A, rhs = stern_formulation(neumann_space_in, dirichl_space_ex, neumann_space_ex, 
+                                   ep_in, ep_ex, q, x_q, kappa)
+
     matrix_time = time.time() - matrix_time
     print "Assamble time: {:5.2f}".format(matrix_time)
 
@@ -161,6 +168,61 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
 
     return A, rhs
 
+
+def stern_1p2(sigma_space_in, dirichl_space_ex, neumann_space_ex, 
+              ep_in, ep_ex, q, x_q, kappa):
+
+    # Functions to proyect the carges potential to the boundary with constants
+    def d_green_func(x, n, domain_index, result):
+        const = -1./(4.*np.pi*ep_in)
+        result[:] = const*np.sum(q*np.dot( x - x_q, n )/(np.linalg.norm( x - x_q, axis=1 )**3))
+
+    print "Projecting charges over surface..."
+    charged_grid_fun  = bempp.api.GridFunction(sigma_space_in, fun=d_green_func)
+
+    rhs = np.concatenate([charged_grid_fun.coefficients,
+                          np.zeros(dirichl_space_ex.global_dof_count),
+                          np.zeros(neumann_space_ex.global_dof_count)])
+
+    # OPERATORS FOR INTERNAL SURFACE
+    from bempp.api.operators.boundary import sparse, laplace, modified_helmholtz
+    idn_in  = sparse.identity(sigma_space_in, sigma_space_in, sigma_space_in)
+
+    adj_1T1 = laplace.adjoint_double_layer(sigma_space_in, sigma_space_in, sigma_space_in)
+    hyp_2T1 = laplace.hypersingular(dirichl_space_ex, sigma_space_in, sigma_space_in)
+    adj_2T1 = laplace.adjoint_double_layer(neumann_space_ex, sigma_space_in, sigma_space_in)
+
+    # OPERATORS FOR EXTERNAL SURFACE
+    idn_ex = sparse.identity(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
+
+    slp_1T2 = laplace.single_layer(sigma_space_in, dirichl_space_ex, dirichl_space_ex)
+    dlp_2T2 = laplace.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
+    slp_2T2 = laplace.single_layer(neumann_space_ex, dirichl_space_ex, dirichl_space_ex)
+
+    dlp_ex = modified_helmholtz.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex, kappa)
+    slp_ex = modified_helmholtz.single_layer(neumann_space_ex, dirichl_space_ex, dirichl_space_ex, kappa)
+
+    ep = (ep_in/ep_ex)
+
+    # Matrix Assembly
+    blocked = bempp.api.BlockedOperator(3, 3)
+    blocked[0, 0] = idn_in + (ep - 1.)*adj_1T1
+    blocked[0, 1] = -hyp_2T1
+    blocked[0, 2] = -adj_2T1
+
+    blocked[1, 0] = slp_1T2
+    blocked[1, 1] = .5*idn_ex + dlp_2T2
+    blocked[1, 2] = -slp_2T2
+
+    #blocked[2, 0] = 0
+    blocked[2, 1] = .5*idn_ex - dlp_ex
+    blocked[2, 2] = slp_ex
+
+    A = blocked.strong_form()
+
+    return A, rhs
+
+
 array_it, array_frame, it_count = np.array([]), np.array([]), 0
 def iteration_counter(x):
     global array_it, array_frame, it_count
@@ -168,12 +230,3 @@ def iteration_counter(x):
     frame, array_it = inspect.currentframe().f_back, np.append(array_it, it_count)
     array_frame = np.append(array_frame, frame.f_locals["resid"])
     print "Iter: {0} - Error: {1:.2E}".format(it_count, frame.f_locals["resid"])
-
-
-# mol_name = '7ry'
-
-# densities = np.array([ 2. ])
-# energy = np.zeros(len(densities))
-
-# for i in range(len(densities)):
-#     energy[i] = solvation_energy(mol_name, densities[i], info=True)
