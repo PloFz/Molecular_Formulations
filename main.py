@@ -1,6 +1,7 @@
 import general_functions as gf, numpy as np, gc, PBL, PBL_stern
 
 mol_name = '5pti'
+# PBL_stern.solvation_energy(mol_name, 2., info=True)
 
 dens = np.array([ 8., 16., 32., 64. ])
 

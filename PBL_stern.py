@@ -74,7 +74,7 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     elif formulation == 'asc':
         sigma_in = (ep_in/ep_ex - 1.)*x[:neumann_space_in.global_dof_count]
         slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
-        phi_q =  slp_ev*sigma_in 
+        phi_q =  slp_ev*sigma_in
 
     total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
 
@@ -155,8 +155,8 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     blocked[1, 2] =  dlp_2T1
     blocked[1, 3] = -slp_2T1
 
-    blocked[2, 0] = -dlp_1T2
-    blocked[2, 1] =  slp_1T2
+    #blocked[2, 0] = -dlp_1T2    ## eliminar**
+    blocked[2, 1] =  ep*slp_1T2
     blocked[2, 2] = .5*idn_ex + dlp_2T2
     blocked[2, 3] = -slp_2T2
 
@@ -210,7 +210,7 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
     blocked[0, 1] = -hyp_2T1
     blocked[0, 2] = -adj_2T1
 
-    blocked[1, 0] = slp_1T2
+    blocked[1, 0] = ep*slp_1T2
     blocked[1, 1] = .5*idn_ex + dlp_2T2
     blocked[1, 2] = -slp_2T2
 

@@ -75,7 +75,7 @@ plt.rcParams.update(params)
 energy_rslt = plt.figure().add_subplot(111)
 energy_rslt.plot(n_boundary_elements, energy_d, marker='o', label='direct', color='k')
 energy_rslt.plot(n_boundary_jueffer, energy_j, marker='s', label='Juffer', color='k')
-#energy_rslt.plot(n_stern_1, energy_s1, marker='^', label='Stern', color='k')
+energy_rslt.plot(n_stern_1, energy_s1, marker='^', label='Stern', color='k')
 energy_rslt.plot(n_pygbe_1, energy_pg, marker='x', label='PyGBe', color='k')
 
 energy_rslt.plot(n_boundary_elements, r_solution_d, 'r--', marker='o', color='k')
