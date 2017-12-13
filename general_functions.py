@@ -1,9 +1,4 @@
-import numpy as np
-import bempp.api
-import inspect
-import time
-import PBL
-import os
+import numpy as np, bempp.api, inspect, time, PBL, os
 
 def read_grid_value(mol_name, mesh_density, formulation='direct'):
 	mesh_directory = 'Molecule/' + mol_name + '/mesh'
@@ -69,9 +64,9 @@ def save_log(mol_name, info):
 		for line in log_file:
 			if len(line)!=0:
 				d = eval(line)
-				if d['mesh_density']!=info['mesh_density'] or d['formulation']!=info['formulation']:
+				if d['mesh_density'] != info['mesh_density'] or d['formulation'] != info['formulation']:
 					dicts.append(d)
-				elif d['formulation']=='stern_d' or d['formulation']=='PyGBe' or d['formulation']=='asc':
+				elif d['formulation'] == 'stern_d' or d['formulation'] == 'PyGBe' or d['formulation'] == 'asc':
 					if d['stern_radius']!=info['stern_radius']:
 						dicts.append(d)
 
@@ -87,20 +82,18 @@ def save_log(mol_name, info):
 		write_dict(mol_name, d, log_file)
 	log_file.close()
 
-
 def charges_potential(x, x_q, dirichl_space, neumann_space):
 	
 	p1, p2 = np.split(x, 2)
 	phi_surface  = bempp.api.GridFunction(dirichl_space, coefficients=p1)
 	dphi_surface = bempp.api.GridFunction(neumann_space, coefficients=p2)
 
-	slp_ev = bempp.api.operators.potential.laplace.single_layer(neumann_space, x_q.transpose())
 	dlp_ev = bempp.api.operators.potential.laplace.double_layer(dirichl_space, x_q.transpose())
+	slp_ev = bempp.api.operators.potential.laplace.single_layer(neumann_space, x_q.transpose())
 	
 	phi_q = slp_ev*dphi_surface - dlp_ev*phi_surface
 
 	return phi_q.real
-
 
 def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	mol_directory = 'Molecule/' + mol_name
@@ -150,7 +143,6 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
 	os.system('rm ' + result_file)
 	print 'PyGBe Finished'
 
-
 def inverse_block_diagonals(matrix):
 	nx, ny = np.shape(matrix)
 	row, col = nx/2, ny/2
@@ -160,15 +152,10 @@ def inverse_block_diagonals(matrix):
 	M21 = matrix[row:, :col].diagonal()
 	M22 = matrix[row:, col:].diagonal()
 
-	M11_i = 1./M11
-	M12_i = 1./M12
-	M21_i = 1./M21
-	M22_i = 1./M22
-
-	Mi_11 = M11_i + M11_i*M12*(1./(M22 - M21*M11_i*M12))*M21*M11_i
-	Mi_12 = -M11_i*M12*(1./(M22 - M21*M11_i*M12))
-	Mi_21 = -1./(M22 - M21*M11_i*M12)*M21*M11_i
-	Mi_22 = 1./(M22 - M21*M11_i*M12)
+	Mi_11 = (1./M11) + (1./M11)*M12*(1./(M22 - M21*(1./M11)*M12))*M21*(1./M11)
+	Mi_12 = -(1./M11)*M12*(1./(M22 - M21*(1./M11)*M12))
+	Mi_21 = -1./(M22 - M21*(1./M11)*M12)*M21*(1./M11)
+	Mi_22 = 1./(M22 - M21*(1./M11)*M12)
 
 	R11 = np.array(range(row))
 	C11 = np.array(range(col))

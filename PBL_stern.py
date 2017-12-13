@@ -1,7 +1,7 @@
-import general_functions as gf, numpy as np, bempp.api, inspect, time, PBL, os
+import general_functions as gf, numpy as np, bempp.api, inspect, time, PBL, os, sys
 
-def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, 
-                     formulation='stern_d', stern_radius=1.4, info=False):
+def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, solver_tol=1e-3,
+                     formulation='stern_d', stern_radius=1.4, info=False, phi_info=False):
     '''
     mol_name  : molecule name to call .pqr & .msh files from its directories
     mesh_density : mesh density from msms cration
@@ -26,36 +26,45 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
 
     q, x_q = gf.read_pqr(mol_name)
 
-    print "\nNew Calculation for {} using {} formulation".format(mol_name, formulation)
+    print "\nNew Calculation"
+    print "Molecule name : " + mol_name
+    print "Formulation   : " + formulation
     #print "Mesh file: {}".format(mesh_file)
-    print "Mesh density: {:5.2f}".format(mesh_density)
-    print "Stern Radius: {:5.2f}".format(stern_radius)
-    print "Number of elements in: {0}".format(dirichl_space_in.global_dof_count)
-    print "Number of elements out: {0}".format(dirichl_space_ex.global_dof_count)
+    print "Mesh density : {:5.2f}".format(mesh_density)
+    print "Stern Radius : {:5.2f}".format(stern_radius)
+    print "Number of elements in  : {0}".format(dirichl_space_in.global_dof_count)
+    print "Number of elements out : {0}".format(dirichl_space_ex.global_dof_count)
 
-    print "Assembling Matrix"
     matrix_time = time.time()
-
     if formulation == 'stern_d':
         A, rhs = stern_formulation(dirichl_space_in, neumann_space_in, 
                                    dirichl_space_ex, neumann_space_ex, 
                                    ep_in, ep_ex, q, x_q, kappa)
-
     elif formulation == 'asc':
         A, rhs = stern_asc(neumann_space_in, dirichl_space_ex, neumann_space_ex, 
                            ep_in, ep_ex, q, x_q, kappa)
-
     matrix_time = time.time() - matrix_time
-    print "Assamble time: {:5.2f}".format(matrix_time)
+
+    # Preconditioning
+    #A_prec = gf.inverse_block_diagonals(A)
 
     # Solver GMRES
+    print "Solving system...\n"
     solver_time = time.time()
     from scipy.sparse.linalg import gmres
     global array_it, array_frame, it_count
     array_it, array_frame, it_count = np.array([]), np.array([]), 0
-    x, _ = gmres(A, rhs, callback=iteration_counter, tol=1e-3, maxiter=1000, restart = 1000)
+    x, _ = gmres(A, rhs, M=A_prec, callback=iteration_counter, tol=solver_tol, maxiter=1000, restart = 1000)
     solver_time = time.time() - solver_time
-    print "The linear system was solved in {:5.2f} seconds and {} iteration".format(solver_time, it_count)
+    print "\nSolved in {} iterations".format(it_count)
+    print "Residual tolerance : {0:1.2e}".format(solver_tol)
+
+    if phi_info:
+        phi_file = open('{}_{}_{:5.2f}'.format(mol_name, formulation, mesh_density),'w')
+        if formulation=='asc':
+            np.savetxt(phi_file, x)
+        else:
+            np.savetxt(phi_file, x[dirichl_space_in.global_dof_count:])
 
     from bempp.api.operators import potential
     if formulation == 'stern_d':
@@ -80,8 +89,11 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125,
     total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
 
     total_time = time.time() - total_time
-    print "Total time: {:5.2f}".format(total_time)
-    print "Total dissolution Energy: {:8.3f}".format(total_energy)
+
+    print "\nAssamble time : {:5.2f}".format(matrix_time)
+    print "Solver time   : {:5.2f}".format(solver_time)
+    print "Total time    : {:5.2f}".format(total_time)
+    print "\nTotal dissolution Energy: {:8.3f}".format(total_energy)
 
     if info:
         info_dict = {}
@@ -108,7 +120,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     def green_func(x, n, domain_index, result):
         result[:] = np.sum(q/np.linalg.norm( x - x_q, axis=1 ))/(4.*np.pi*ep_in)
 
-    print "Projecting charges over surface..."
+    print "\nProjecting charges over surface..."
     charged_grid_fun  = bempp.api.GridFunction(dirichl_space_in, fun=green_func)
 
     rhs = np.concatenate([charged_grid_fun.coefficients, 
@@ -116,6 +128,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
                           np.zeros(dirichl_space_ex.global_dof_count), 
                           np.zeros(neumann_space_ex.global_dof_count)])
 
+    print "Defining operators..."
     # OPERATOR FOR INTERNAL SURFACE
     from bempp.api.operators.boundary import sparse, laplace, modified_helmholtz
     idn_in  = sparse.identity(dirichl_space_in, dirichl_space_in, dirichl_space_in)
@@ -134,7 +147,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     idn_ex = sparse.identity(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
     # Internal Boudary
     slp_1T2 = laplace.single_layer(neumann_space_in, dirichl_space_ex, dirichl_space_ex)
-    dlp_1T2 = laplace.double_layer(dirichl_space_in, dirichl_space_ex, dirichl_space_ex)
+    # dlp_1T2 = laplace.double_layer(dirichl_space_in, dirichl_space_ex, dirichl_space_ex)
 
     slp_2T2 = laplace.single_layer(neumann_space_ex, dirichl_space_ex, dirichl_space_ex)
     dlp_2T2 = laplace.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
@@ -144,12 +157,13 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
 
     ep = (ep_in/ep_ex)
 
+    print "Creating operators..."
     # Matrix Assemble
     blocked = bempp.api.BlockedOperator(4, 4)
     blocked[0, 0] = .5*idn_in + dlp_in
     blocked[0, 1] = -slp_in
-    #blocked[0, 2] = 0
-    #blocked[0, 3] = 0
+    # blocked[0, 2] = 0
+    # blocked[0, 3] = 0
 
     # Original formulation
     blocked[1, 0] = .5*idn_in - dlp_in   # dlp_in = dlp_1T1
@@ -157,13 +171,13 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     blocked[1, 2] =  dlp_2T1
     blocked[1, 3] = -slp_2T1
 
-    blocked[2, 0] = -dlp_1T2    ## eliminar**
+    # blocked[2, 0] = -dlp_1T2    ## eliminar**
     blocked[2, 1] =  ep*slp_1T2
     blocked[2, 2] = .5*idn_ex + dlp_2T2
     blocked[2, 3] = -slp_2T2
 
-    #blocked[3, 0] = 0
-    #blocked[3, 1] = 0
+    # blocked[3, 0] = 0
+    # blocked[3, 1] = 0
     blocked[3, 2] = .5*idn_ex - dlp_ex
     blocked[3, 3] = slp_ex
     A = blocked.strong_form()
@@ -179,13 +193,14 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
         const = -1./(4.*np.pi*ep_in)
         result[:] = const*np.sum(q*np.dot( x - x_q, n )/(np.linalg.norm( x - x_q, axis=1 )**3))
 
-    print "Projecting charges over surface..."
+    print "\nProjecting charges over surface..."
     charged_grid_fun  = bempp.api.GridFunction(sigma_space_in, fun=d_green_func)
 
     rhs = np.concatenate([charged_grid_fun.coefficients,
                           np.zeros(dirichl_space_ex.global_dof_count),
                           np.zeros(neumann_space_ex.global_dof_count)])
 
+    print "Defining operators..."
     # OPERATORS FOR INTERNAL SURFACE
     from bempp.api.operators.boundary import sparse, laplace, modified_helmholtz
     idn_in  = sparse.identity(sigma_space_in, sigma_space_in, sigma_space_in)
@@ -206,6 +221,7 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
 
     ep = (ep_in/ep_ex)
 
+    print "Creating operators..."
     # Matrix Assemble
     blocked = bempp.api.BlockedOperator(3, 3)
     blocked[0, 0] = idn_in + (ep - 1.)*adj_1T1
@@ -224,11 +240,11 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
 
     return A, rhs
 
-
 array_it, array_frame, it_count = np.array([]), np.array([]), 0
 def iteration_counter(x):
     global array_it, array_frame, it_count
     it_count += 1
     frame, array_it = inspect.currentframe().f_back, np.append(array_it, it_count)
     array_frame = np.append(array_frame, frame.f_locals["resid"])
-    print "Iter: {0} - Error: {1:.2E}".format(it_count, frame.f_locals["resid"])
+    sys.stdout.flush()
+    sys.stdout.write("Iter: {0} - Error: {1:.2E}    \r".format(it_count, frame.f_locals["resid"]))

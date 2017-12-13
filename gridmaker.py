@@ -132,7 +132,7 @@ if not os.path.exists(pqr_file_name):
 	os.system(pdb2pqr + method + pdb_file_name + pqr_file_name)
 
 
-dens = np.array([ 2])#., 4., 8., 16., 32., 64. ])
+dens = np.array([ 1.])#., 4., 8., 16., 32., 64. ])
 for dd in dens:
 	grid_in = pqr2mesh(mol_name, density=dd, program='msms')
 	grid_in = pqr2mesh(mol_name, density=dd, stern=True, stern_radius=1.4, program='msms')
