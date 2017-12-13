@@ -71,7 +71,7 @@ def save_log(mol_name, info):
 				d = eval(line)
 				if d['mesh_density']!=info['mesh_density'] or d['formulation']!=info['formulation']:
 					dicts.append(d)
-				elif d['formulation']=='stern_d' or d['formulation']=='PyGBe':
+				elif d['formulation']=='stern_d' or d['formulation']=='PyGBe' or d['formulation']=='asc':
 					if d['stern_radius']!=info['stern_radius']:
 						dicts.append(d)
 
@@ -87,9 +87,9 @@ def save_log(mol_name, info):
 		write_dict(mol_name, d, log_file)
 	log_file.close()
 
-	
+
 def charges_potential(x, x_q, dirichl_space, neumann_space):
-	# # return evaluation: phi_k = V[d_phi] - K[phi]
+	
 	p1, p2 = np.split(x, 2)
 	phi_surface  = bempp.api.GridFunction(dirichl_space, coefficients=p1)
 	dphi_surface = bempp.api.GridFunction(neumann_space, coefficients=p2)
@@ -149,3 +149,40 @@ def run_pygbe(mol_name, mesh_density, stern_radius, info=False):
         	save_log(mol_name, info_dict)
 	os.system('rm ' + result_file)
 	print 'PyGBe Finished'
+
+
+def inverse_block_diagonals(matrix):
+	nx, ny = np.shape(matrix)
+	row, col = nx/2, ny/2
+
+	M11 = matrix[:row, :col].diagonal()
+	M12 = matrix[:row, col:].diagonal()
+	M21 = matrix[row:, :col].diagonal()
+	M22 = matrix[row:, col:].diagonal()
+
+	M11_i = 1./M11
+	M12_i = 1./M12
+	M21_i = 1./M21
+	M22_i = 1./M22
+
+	Mi_11 = M11_i + M11_i*M12*(1./(M22 - M21*M11_i*M12))*M21*M11_i
+	Mi_12 = -M11_i*M12*(1./(M22 - M21*M11_i*M12))
+	Mi_21 = -1./(M22 - M21*M11_i*M12)*M21*M11_i
+	Mi_22 = 1./(M22 - M21*M11_i*M12)
+
+	R11 = np.array(range(row))
+	C11 = np.array(range(col))
+	R12 = np.array(range(row))
+	C12 = np.array(range(col)) + col
+	R21 = np.array(range(row)) + row
+	C21 = np.array(range(col))
+	R22 = np.array(range(row)) + row
+	C22 = np.array(range(col)) + col
+
+	D_n = np.concatenate((Mi_11, Mi_12, Mi_21, Mi_22))
+	R_n = np.concatenate((R11, R12, R21, R22))
+	C_n = np.concatenate((C11, C12, C21, C22))
+
+	A_inv = csc_matrix((D_n, (R_n, C_n)), shape=(nx, ny))
+
+	return A_inv

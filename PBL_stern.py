@@ -142,14 +142,15 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     dlp_ex = modified_helmholtz.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex, kappa)
 
     ep = (ep_in/ep_ex)
-    # Matrix Assembly
+
+    # Matrix Assemble
     blocked = bempp.api.BlockedOperator(4, 4)
     blocked[0, 0] = .5*idn_in + dlp_in
     blocked[0, 1] = -slp_in
     #blocked[0, 2] = 0
     #blocked[0, 3] = 0
 
-    #Original formulation
+    # Original formulation
     blocked[1, 0] = .5*idn_in - dlp_in   # dlp_in = dlp_1T1
     blocked[1, 1] =  ep*slp_in           # slp_in = slp_1T1
     blocked[1, 2] =  dlp_2T1
@@ -204,7 +205,7 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
 
     ep = (ep_in/ep_ex)
 
-    # Matrix Assembly
+    # Matrix Assemble
     blocked = bempp.api.BlockedOperator(3, 3)
     blocked[0, 0] = idn_in + (ep - 1.)*adj_1T1
     blocked[0, 1] = -hyp_2T1
