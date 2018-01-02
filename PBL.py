@@ -26,8 +26,9 @@ def solvation_energy(mol_name, mesh_density,
 	total_time = time.time()
 
 	# Import .msh file
-	grid = bempp.api.import_grid(mesh_file)
-	
+	#grid = bempp.api.import_grid(mesh_file)
+	grid = bempp.api.shapes.regular_sphere(3)
+
 	# Define potential and derivate spaces
 	dirichl_space = bempp.api.function_space(grid, "DP", 0)
 	neumann_space = bempp.api.function_space(grid, "DP", 0)
@@ -50,10 +51,16 @@ def solvation_energy(mol_name, mesh_density,
 	matrix_time = time.time() - matrix_time
 	print "Assamble time: {:5.2f}".format(matrix_time)
 
+	print "Preconditioning"
+    precond_time = time.time()
+    from scipy.sparse import block_diag
+	A_prec = gf.inverse_block_diagonal_analytic(bempp.api.as_matrix(A).real)
+    precond_time = time.time() - precond_time
+
 	solver_time = time.time()
 	global array_it, array_frame, it_count
 	array_it, array_frame, it_count = np.array([]), np.array([]), 0
-	x, _ = gmres(A, rhs, callback=iteration_counter, tol=solver_tol, maxiter=500, restart = 1000)
+	x, _ = gmres(A, rhs, M=A_prec, callback=iteration_counter, tol=solver_tol, maxiter=500, restart = 1000)
 	solver_time = time.time() - solver_time
 	print "The linear system was solved in {:5.2f} seconds and {} iteration".format(solver_time, it_count)
 
@@ -82,6 +89,7 @@ def solvation_energy(mol_name, mesh_density,
 		info_dict['formulation'] = formulation
 		info_dict['energy'] = total_energy
 		info_dict['assemble_time'] = matrix_time
+		info_dict['precond_time'] = precond_time
 		info_dict['solver_time'] = solver_time
 		info_dict['total_time'] = total_time
 		info_dict['iterations'] = it_count

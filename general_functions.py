@@ -170,6 +170,7 @@ def inverse_block_diagonals(matrix):
 	R_n = np.concatenate((R11, R12, R21, R22))
 	C_n = np.concatenate((C11, C12, C21, C22))
 
+	from scipy.sparse import csc_matrix
 	A_inv = csc_matrix((D_n, (R_n, C_n)), shape=(nx, ny))
 
 	return A_inv

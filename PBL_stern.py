@@ -45,8 +45,24 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
                            ep_in, ep_ex, q, x_q, kappa)
     matrix_time = time.time() - matrix_time
 
-    # Preconditioning
-    #A_prec = gf.inverse_block_diagonals(A)
+
+    print "Preconditioning"
+    precond_time = time.time()
+    from scipy.sparse import block_diag, csc_matrix
+    if formulation == 'asc':
+        n_in = neumann_space_in.global_dof_count
+        A_sigma = csc_matrix((n_in, n_in), dtype=np.float64)
+        A_sigma.setdiag(1./bempp.api.as_matrix(A[:n_in, :n_in]).real.diagonal())
+        A_b2 = gf.inverse_block_diagonal_analytic(bempp.api.as_matrix(A[n_in:, n_in:]).real)
+        A_prec = block_diag((A_sigma, A_b2))
+
+    elif formulation == 'stern_d':
+        n_in = dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count
+        A_b1 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[:n_in, :n_in]).real)
+        A_b2 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[n_in:, n_in:]).real)
+        A_prec = block_diag((A_b1, A_b2))
+    precond_time = time.time() - precond_time
+
 
     # Solver GMRES
     print "Solving system...\n"
@@ -108,6 +124,7 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
         info_dict['total_time'] = total_time
         info_dict['iterations'] = it_count
         info_dict['stern_radius'] = stern_radius
+        info_dict['precond_time'] = precond_time
 
         gf.save_log(mol_name, info_dict)
 
