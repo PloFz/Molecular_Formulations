@@ -19,10 +19,10 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
     grid_ex = bempp.api.import_grid(mesh_file_ex)
 
     # Define spaces for both boundary phi & dphi
-    dirichl_space_in = bempp.api.function_space(grid_in, "DP", 0)
-    neumann_space_in = bempp.api.function_space(grid_in, "DP", 0)
-    dirichl_space_ex = bempp.api.function_space(grid_ex, "DP", 0)
-    neumann_space_ex = bempp.api.function_space(grid_ex, "DP", 0)
+    dirichl_space_in = bempp.api.function_space(grid_in, "P", 1)
+    neumann_space_in = bempp.api.function_space(grid_in, "P", 1)
+    dirichl_space_ex = bempp.api.function_space(grid_ex, "P", 1)
+    neumann_space_ex = bempp.api.function_space(grid_ex, "P", 1)
 
     q, x_q = gf.read_pqr(mol_name)
 
@@ -53,13 +53,14 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
         n_in = neumann_space_in.global_dof_count
         A_sigma = csc_matrix((n_in, n_in), dtype=np.float64)
         A_sigma.setdiag(1./bempp.api.as_matrix(A[:n_in, :n_in]).real.diagonal())
-        A_b2 = gf.inverse_block_diagonal_analytic(bempp.api.as_matrix(A[n_in:, n_in:]).real)
+        A_b2 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[n_in:, n_in:]).real)
         A_prec = block_diag((A_sigma, A_b2))
 
     elif formulation == 'stern_d':
-        n_in = dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count
-        A_b1 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[:n_in, :n_in]).real)
-        A_b2 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[n_in:, n_in:]).real)
+        A_np = bempp.api.as_matrix(A).real
+	n_in = dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count
+	A_b1 = gf.inverse_block_diagonals(A_np[:n_in, :n_in])
+        A_b2 = gf.inverse_block_diagonals(A_np[n_in:, n_in:])
         A_prec = block_diag((A_b1, A_b2))
     precond_time = time.time() - precond_time
 

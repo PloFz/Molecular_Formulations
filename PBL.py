@@ -26,8 +26,7 @@ def solvation_energy(mol_name, mesh_density,
 	total_time = time.time()
 
 	# Import .msh file
-	#grid = bempp.api.import_grid(mesh_file)
-	grid = bempp.api.shapes.regular_sphere(3)
+	grid = bempp.api.import_grid(mesh_file)
 
 	# Define potential and derivate spaces
 	dirichl_space = bempp.api.function_space(grid, "DP", 0)
@@ -52,10 +51,10 @@ def solvation_energy(mol_name, mesh_density,
 	print "Assamble time: {:5.2f}".format(matrix_time)
 
 	print "Preconditioning"
-    precond_time = time.time()
-    from scipy.sparse import block_diag
-	A_prec = gf.inverse_block_diagonal_analytic(bempp.api.as_matrix(A).real)
-    precond_time = time.time() - precond_time
+   	precond_time = time.time()
+   	from scipy.sparse import block_diag
+	A_prec = gf.inverse_block_diagonals(bempp.api.as_matrix(A).real)
+ 	precond_time = time.time() - precond_time
 
 	solver_time = time.time()
 	global array_it, array_frame, it_count
