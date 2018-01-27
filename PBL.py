@@ -1,9 +1,6 @@
 import general_functions as gf
 import numpy as np
-import bempp.api
-import inspect
-import time
-import os
+import bempp.api, inspect, time, os, sys
 
 from scipy.sparse.linalg import gmres
 from bempp.api.operators.boundary import sparse, laplace, modified_helmholtz
@@ -50,16 +47,16 @@ def solvation_energy(mol_name, mesh_density,
 	matrix_time = time.time() - matrix_time
 	print "Assamble time: {:5.2f}".format(matrix_time)
 
-	print "Preconditioning"
-   	precond_time = time.time()
-   	from scipy.sparse import block_diag
-	A_prec = gf.inverse_block_diagonals(bempp.api.as_matrix(A).real)
- 	precond_time = time.time() - precond_time
+	# print "Preconditioning"
+	# precond_time = time.time()
+	# from scipy.sparse import block_diag
+	# A_prec = gf.inverse_block_diagonals(bempp.api.as_matrix(A).real)
+	# precond_time = time.time() - precond_time
 
 	solver_time = time.time()
 	global array_it, array_frame, it_count
 	array_it, array_frame, it_count = np.array([]), np.array([]), 0
-	x, _ = gmres(A, rhs, M=A_prec, callback=iteration_counter, tol=solver_tol, maxiter=500, restart = 1000)
+	x, _ = gmres(A, rhs, callback=iteration_counter, tol=solver_tol, maxiter=500, restart = 1000)
 	solver_time = time.time() - solver_time
 	print "The linear system was solved in {:5.2f} seconds and {} iteration".format(solver_time, it_count)
 
@@ -72,10 +69,9 @@ def solvation_energy(mol_name, mesh_density,
 	total_time = time.time() - total_time
 	print "Total time: {:5.2f}".format(total_time)
 
-	if not os.path.exists('log/'):
-		os.makedirs('log/')
-
 	if phi_info:
+		if not os.path.exists('log/'):
+			os.makedirs('log/')
 		phi_data = open('log/phi_{}_{}_d{:04.1f}'.format(mol_name, formulation, mesh_density), 'w')
 		for boundary_element in x:
 			phi_data.write(str(boundary_element.real) + '\n')
@@ -88,7 +84,6 @@ def solvation_energy(mol_name, mesh_density,
 		info_dict['formulation'] = formulation
 		info_dict['energy'] = total_energy
 		info_dict['assemble_time'] = matrix_time
-		info_dict['precond_time'] = precond_time
 		info_dict['solver_time'] = solver_time
 		info_dict['total_time'] = total_time
 		info_dict['iterations'] = it_count
@@ -119,6 +114,9 @@ def direct_formulation(dirichl_space, neumann_space, q, x_q, ep_in, ep_ex, kappa
 	blocked[1, 0] = 0.5*identity - dlp_ex
 	blocked[1, 1] = (ep_in/ep_ex)*slp_ex
 	A = blocked.strong_form()
+
+	tree = bempp.api.hmatrix_interface.block_cluster_tree(dlp_in.weak_form)
+	tree.plot()
 
 	return A, rhs
 
@@ -165,8 +163,9 @@ def juffer_formulation(dirichl_space, neumann_space, q, x_q, ep_in, ep_ex, kappa
 
 array_it, array_frame, it_count = np.array([]), np.array([]), 0
 def iteration_counter(x):
-	global array_it, array_frame, it_count
-	it_count += 1
-	frame, array_it = inspect.currentframe().f_back, np.append(array_it, it_count)
-	array_frame = np.append(array_frame, frame.f_locals["resid"])
-	print "Iter: {0} - Error: {1:.2E}".format(it_count, frame.f_locals["resid"])
+    global array_it, array_frame, it_count
+    it_count += 1
+    frame, array_it = inspect.currentframe().f_back, np.append(array_it, it_count)
+    array_frame = np.append(array_frame, frame.f_locals["resid"])
+    sys.stdout.flush()
+    sys.stdout.write("Iter: {0} - Error: {1:.2E}    \r".format(it_count, frame.f_locals["resid"]))

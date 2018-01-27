@@ -6,62 +6,68 @@ directory = 'Molecule/{}/'.format(mol_name)
 log_file = open(directory + mol_name + '_log', 'r').read().split('\n')
 dicts = [eval(line) for line in log_file if len(line)!= 0]
 
+# direct & Juffer
 n_boundary_elements = [l['n_of_elements'] for l in dicts if l['formulation']=='direct']
+n_boundary_jueffer = [l['n_of_elements'] for l in dicts if l['formulation']=='juffer']
 
 times_d = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 						for l in dicts if l['formulation']=='direct'])
-energy_d = [l['energy'] for l in dicts if l['formulation']=='direct']
-
-
-n_boundary_jueffer = [l['n_of_elements']
-						for l in dicts if l['formulation']=='juffer']
-
 times_j = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 						for l in dicts if l['formulation']=='juffer'])
+
+energy_d = [l['energy'] for l in dicts if l['formulation']=='direct']
 energy_j = [l['energy'] for l in dicts if l['formulation']=='juffer']
 
+iters_d = [l['iterations'] for l in dicts if l['formulation']=='direct']
+iters_j = [l['iterations'] for l in dicts if l['formulation']=='juffer']
+
+# direct Stern & pygbe
 n_boundary_stern_1 = [l['n_of_elements']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4]
 energy_s1 = [l['energy'] for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4]
+energy_pg = [l['energy'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4]
+
 times_s1 = np.array([[l['assemble_time'], l['solver_time'], l['total_time']]
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4])
-
-
-energy_pg = [l['energy'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4]
 times_pg = np.array([[l['solver_time'], l['total_time']]
 						 for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4])
+
+iters_s1 = [l['iterations'] for l in dicts if l['formulation']=='stern_d' and l['stern_radius']==1.4]
+iters_pg = [l['iterations'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']==1.4]
+
 
 # n_stern_2 = [l['n_of_elements']
 # 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4]
 energy_s2 = [l['energy'] for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4]
+energy_pr = [l['energy'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']!=1.4]
+
 radius_s2 = [l['stern_radius']
 						 for l in dicts if l['formulation']=='stern_d' and l['stern_radius']!=1.4]
-
-energy_pr = [l['energy'] for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']!=1.4]
 radius_pr = [l['stern_radius']
 						 for l in dicts if l['formulation']=='PyGBe' and l['stern_radius']!=1.4]
 
 
-rich_energy_d, _, _ = gf.richardson_extrapolation(energy_d, n_boundary_elements)
-rich_energy_j, _, _ = gf.richardson_extrapolation(energy_j, n_boundary_elements)
-rich_energy_s, _, _ = gf.richardson_extrapolation(energy_s1, n_boundary_stern_1)
-rich_energy_p, _, _ = gf.richardson_extrapolation(energy_pg, n_boundary_elements)
+rich_energy_d, r_d, p_d = gf.richardson_extrapolation(energy_d, n_boundary_elements)
+rich_energy_j, r_j, p_j = gf.richardson_extrapolation(energy_j, n_boundary_elements)
+rich_energy_s, r_s, p_s = gf.richardson_extrapolation(energy_s1, n_boundary_stern_1)
+rich_energy_p, r_p, p_p = gf.richardson_extrapolation(energy_pg, n_boundary_elements)
 
+print rich_energy_d, r_d, p_d
+print rich_energy_j, r_j, p_j
+print rich_energy_s, r_s, p_s
+print rich_energy_p, r_p, p_p
 
-r_solution_d = rich_energy_d*np.ones(len(n_boundary_elements))
-r_solution_j = rich_energy_j*np.ones(len(n_boundary_jueffer))
-r_solution_s = rich_energy_s*np.ones(len(n_boundary_stern_1))
-r_solution_p = rich_energy_p*np.ones(len(n_boundary_elements))
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 
-params = {'figure.figsize':  (7, 6),
-		  'axes.titlesize':  12,
-          'axes.labelsize':  10,
-          'xtick.labelsize': 10,
-          'ytick.labelsize': 10,
-		  'legend.fontsize': 10,
+params = {'figure.figsize':  (8, 6),
+		  'axes.titlesize':  14,
+          'axes.labelsize':  14,
+          'xtick.labelsize': 14,
+          'ytick.labelsize': 14,
+		  'legend.fontsize': 14,
+		  'font.size': 14,
 		  'lines.linewidth': .5,
 		  'lines.color': 'k',
 		  'legend.loc': 'upper left'}
@@ -73,25 +79,41 @@ energy_rslt.plot(n_boundary_jueffer, energy_j, marker='s', label='Juffer', color
 energy_rslt.plot(n_boundary_stern_1, energy_s1, marker='^', label='Stern', color='k')
 energy_rslt.plot(n_boundary_elements, energy_pg, marker='x', label='PyGBe', color='k')
 
+r_solution_d = rich_energy_d*np.ones(len(n_boundary_elements))
+r_solution_j = rich_energy_j*np.ones(len(n_boundary_jueffer))
+r_solution_s = rich_energy_s*np.ones(len(n_boundary_stern_1))
+r_solution_p = rich_energy_p*np.ones(len(n_boundary_elements))
+
 energy_rslt.plot(n_boundary_elements, r_solution_d, 'r--', marker='o', color='k')
 energy_rslt.plot(n_boundary_jueffer, r_solution_j, 'r--', marker='s', color='k')
 energy_rslt.plot(n_boundary_stern_1, r_solution_s, 'r--', marker='^', color='k')
 energy_rslt.plot(n_boundary_elements, r_solution_p, 'r--', marker='x', color='k')
 
-energy_rslt.set_title('Mesh Convergence')
+#energy_rslt.set_title('Mesh Convergence')
 energy_rslt.set_xlabel('N of elements')
 energy_rslt.set_ylabel(r'$\Delta$G  [kcal]')
 energy_rslt.legend()
 plt.savefig(directory + 'Energy.png')
 
+iterations = plt.figure().add_subplot(111)
+iterations.plot(n_boundary_elements[1:], iters_d[1:], marker='o', label='direct', color='k')
+iterations.plot(n_boundary_jueffer[1:], iters_j[1:], marker='s', label='Juffer', color='k')
+iterations.plot(n_boundary_stern_1[1:], iters_s1[1:], marker='^', label='Stern', color='k')
+iterations.plot(n_boundary_elements[1:], iters_pg[1:], marker='x', label='PyGBe', color='k')
+
+#iterations.set_title('Mesh Convergence')
+iterations.set_xlabel('N of elements')
+iterations.set_ylabel('N of Iterations')
+iterations.legend()
+plt.savefig(directory + 'Iterations.png')
 
 time_general = plt.figure().add_subplot(111)
-time_general.loglog(n_stern_1, times_pg[:,1], marker='x', label='PyGBe', color='k')
+time_general.loglog(n_boundary_elements, times_pg[:,1], marker='x', label='PyGBe', color='k')
 time_general.loglog(n_boundary_elements, times_d[:,2], marker='o', label='direct', color='k')
 time_general.loglog(n_boundary_jueffer, times_j[:,2], marker='s', label='juffer', color='k')
-time_general.loglog(n_stern_1, times_s1[:,2], marker='^', label='stern', color='k')
+time_general.loglog(n_boundary_stern_1, times_s1[:,2], marker='^', label='stern', color='k')
 
-time_general.set_title('Total Time Consuming')
+#time_general.set_title('Total Time Consuming')
 time_general.set_xlabel('N of elements')
 time_general.set_ylabel('Time [s]')
 time_general.legend(prop={'size': 13})
@@ -100,12 +122,12 @@ plt.savefig(directory + 'TotalTime.png')
 
 
 time_solver = plt.figure().add_subplot(111)
-time_solver.loglog(n_stern_1, times_pg[:,0], marker='x', label='PyGBe', color='k')
+time_solver.loglog(n_boundary_elements, times_pg[:,0], marker='x', label='PyGBe', color='k')
 time_solver.loglog(n_boundary_elements, times_d[:,1], marker='o', label='direct', color='k')
 time_solver.loglog(n_boundary_jueffer, times_j[:,1], marker='s', label='juffer', color='k')
-time_solver.loglog(n_stern_1, times_s1[:,1], marker='^', label='stern', color='k')
+time_solver.loglog(n_boundary_stern_1, times_s1[:,1], marker='^', label='stern', color='k')
 
-time_solver.set_title('Solver Time Consuming')
+#time_solver.set_title('Solver Time Consuming')
 time_solver.set_xlabel('N of elements')
 time_solver.set_ylabel('Time [s]')
 time_solver.legend(prop={'size': 13})
@@ -114,11 +136,11 @@ plt.savefig(directory + 'SolverTime.png')
 
 
 time_matrix = plt.figure().add_subplot(111)
-time_matrix.loglog(n_stern_1, times_s1[:,0], marker='^', label='stern', color='k')
+time_matrix.loglog(n_boundary_stern_1, times_s1[:,0], marker='^', label='stern', color='k')
 time_matrix.loglog(n_boundary_jueffer, times_j[:,0], marker='s', label='juffer', color='k')
 time_matrix.loglog(n_boundary_elements, times_d[:,0], marker='o', label='direct', color='k')
 
-time_matrix.set_title('Matrix Assemble Time Consuming')
+#time_matrix.set_title('Matrix Assemble Time Consuming')
 time_matrix.set_xlabel('N of elements')
 time_matrix.set_ylabel('Time [s]')
 time_matrix.legend(prop={'size': 13})

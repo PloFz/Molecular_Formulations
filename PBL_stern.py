@@ -1,6 +1,6 @@
 import general_functions as gf, numpy as np, bempp.api, inspect, time, PBL, os, sys
 
-def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, solver_tol=1e-3,
+def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, solver_tol=1e-7,
                      formulation='stern_d', stern_radius=1.4, info=False, phi_info=False):
     '''
     mol_name  : molecule name to call .pqr & .msh files from its directories
@@ -13,16 +13,17 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
 
     mesh_directory = 'Molecule/' + mol_name + '/mesh'
     mesh_file_in = '{}/{}_d{:04.1f}.msh'.format(mesh_directory, mol_name, mesh_density)
-    mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}.msh'.format(mesh_directory, mol_name, mesh_density, stern_radius)
+    mesh_file_ex = '{}/{}_d{:04.1f}_strn-pr{:04.1f}.msh'.format(mesh_directory, mol_name, 
+                                                                mesh_density, stern_radius)
 
     grid_in = bempp.api.import_grid(mesh_file_in)
     grid_ex = bempp.api.import_grid(mesh_file_ex)
 
     # Define spaces for both boundary phi & dphi
-    dirichl_space_in = bempp.api.function_space(grid_in, "P", 1)
-    neumann_space_in = bempp.api.function_space(grid_in, "P", 1)
-    dirichl_space_ex = bempp.api.function_space(grid_ex, "P", 1)
-    neumann_space_ex = bempp.api.function_space(grid_ex, "P", 1)
+    dirichl_space_in = bempp.api.function_space(grid_in, "DP", 0)
+    neumann_space_in = bempp.api.function_space(grid_in, "DP", 0)
+    dirichl_space_ex = bempp.api.function_space(grid_ex, "DP", 0)
+    neumann_space_ex = bempp.api.function_space(grid_ex, "DP", 0)
 
     q, x_q = gf.read_pqr(mol_name)
 
@@ -45,45 +46,20 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
                            ep_in, ep_ex, q, x_q, kappa)
     matrix_time = time.time() - matrix_time
 
-
-    print "Preconditioning"
-    precond_time = time.time()
-    from scipy.sparse import block_diag, csc_matrix
-    if formulation == 'asc':
-        n_in = neumann_space_in.global_dof_count
-        A_sigma = csc_matrix((n_in, n_in), dtype=np.float64)
-        A_sigma.setdiag(1./bempp.api.as_matrix(A[:n_in, :n_in]).real.diagonal())
-        A_b2 = gf.inverse_block_diagonals(bempp.api.as_matrix(A[n_in:, n_in:]).real)
-        A_prec = block_diag((A_sigma, A_b2))
-
-    elif formulation == 'stern_d':
-        A_np = bempp.api.as_matrix(A).real
-	n_in = dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count
-	A_b1 = gf.inverse_block_diagonals(A_np[:n_in, :n_in])
-        A_b2 = gf.inverse_block_diagonals(A_np[n_in:, n_in:])
-        A_prec = block_diag((A_b1, A_b2))
-    precond_time = time.time() - precond_time
-
-
     # Solver GMRES
     print "Solving system...\n"
     solver_time = time.time()
     from scipy.sparse.linalg import gmres
     global array_it, array_frame, it_count
     array_it, array_frame, it_count = np.array([]), np.array([]), 0
-    x, _ = gmres(A, rhs, M=A_prec, callback=iteration_counter, tol=solver_tol, maxiter=1000, restart = 1000)
+    x, _ = gmres(A, rhs, callback=iteration_counter, tol=solver_tol, maxiter=1000, restart = 1000)
     solver_time = time.time() - solver_time
     print "\nSolved in {} iterations".format(it_count)
     print "Residual tolerance : {0:1.2e}".format(solver_tol)
 
-    if phi_info:
-        phi_file = open('{}_{}_{:5.2f}'.format(mol_name, formulation, mesh_density),'w')
-        if formulation=='asc':
-            np.savetxt(phi_file, x)
-        else:
-            np.savetxt(phi_file, x[dirichl_space_in.global_dof_count:])
-
+    
     from bempp.api.operators import potential
+    from bempp.api.operators import boundary
     if formulation == 'stern_d':
         # The following grid function stores the computed boundary data of the total field.
         p1, p2 = np.split(x[:(dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count)], 2) 
@@ -97,15 +73,59 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
         # Evaluate potential at charges position & total dissolution energy
         phi_q = slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
 
-    elif formulation == 'asc':
-        sigma_in = np.array((ep_in/ep_ex - 1.)*x[:neumann_space_in.global_dof_count])
-        total_sigma_in = bempp.api.GridFunction(neumann_space_in, coefficients=sigma_in)
-	slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
-        phi_q =  slp_ev*total_sigma_in
+        total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
+        print "Formulacion normal"
+        print total_energy
+
+    if formulation == 'asc' or formulation == 'stern_d':
+        print "\nSolving for internal phi"
+
+        idn_in = boundary.sparse.identity(dirichl_space_in, dirichl_space_in, dirichl_space_in)
+        dlp_in = boundary.laplace.double_layer(dirichl_space_in, dirichl_space_in, dirichl_space_in)
+
+        B = (.5*idn_in + dlp_in).strong_form()
+
+        def green_func(x, n, domain_index, result):
+            result[:] = np.sum(q/np.linalg.norm( x - x_q, axis=1 ))/(4.*np.pi*ep_in)
+        charged_grid_fun  = bempp.api.GridFunction(dirichl_space_in, fun=green_func)
+
+        _, dphi_in = np.split(x[:(dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count)], 2)
+        total_neumann_in = bempp.api.GridFunction(neumann_space_in, coefficients=dphi_in)
+        slp_in = boundary.laplace.single_layer(neumann_space_in, dirichl_space_in, dirichl_space_in)
+
+        rhs = charged_grid_fun.coefficients + (slp_in*total_neumann_in).coefficients
+
+        phi_in, _ = gmres(B, rhs, callback=iteration_counter, tol=1e-6, maxiter=1000, restart=1000)
+        
+        total_dirichl_in = bempp.api.GridFunction(dirichl_space_in, coefficients=phi_in)
+
+        slp_ev = potential.laplace.single_layer(neumann_space_in, x_q.transpose())
+        dlp_ev = potential.laplace.double_layer(dirichl_space_in, x_q.transpose())
+
+        phi_q = slp_ev*total_neumann_in - dlp_ev*total_dirichl_in
+
+        print len(phi_in)
+        print len(x[:dirichl_space_in.global_dof_count])
+        total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
+        print "Formulacion 2-pasos"
+        print total_energy
 
     total_energy = 2*np.pi*332.064*np.sum(q*phi_q).real
 
     total_time = time.time() - total_time
+
+
+    if phi_info:
+        phi_in_file = open('Molecule/{}/phi_in_{}_{:5.2e}'.format(mol_name, formulation, mesh_density),'w')
+        phi_ex_file = open('Molecule/{}/phi_ex_{}_{:5.2e}'.format(mol_name, formulation, mesh_density),'w')
+        if formulation=='asc':
+            np.savetxt(phi_in_file, x[:neumann_space_in.global_dof_count].real)
+            np.savetxt(phi_ex_file, x[neumann_space_in.global_dof_count:].real)
+        else:
+            n_in = dirichl_space_in.global_dof_count + neumann_space_in.global_dof_count
+            np.savetxt(phi_in_file, x[dirichl_space_in.global_dof_count:n_in].real)
+            np.savetxt(phi_ex_file, x[n_in:].real)
+
 
     print "\nAssamble time : {:5.2f}".format(matrix_time)
     print "Solver time   : {:5.2f}".format(solver_time)
@@ -125,7 +145,6 @@ def solvation_energy(mol_name, mesh_density, ep_in=4., ep_ex=80., kappa=0.125, s
         info_dict['total_time'] = total_time
         info_dict['iterations'] = it_count
         info_dict['stern_radius'] = stern_radius
-        info_dict['precond_time'] = precond_time
 
         gf.save_log(mol_name, info_dict)
 
@@ -203,7 +222,7 @@ def stern_formulation(dirichl_space_in, neumann_space_in, dirichl_space_ex, neum
     return A, rhs
 
 
-def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex, 
+def stern_asc(neumann_space_in, dirichl_space_ex, neumann_space_ex, 
               ep_in, ep_ex, q, x_q, kappa):
 
     # Functions to proyect the carges potential to the boundary with constants
@@ -212,7 +231,7 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
         result[:] = const*np.sum(q*np.dot( x - x_q, n )/(np.linalg.norm( x - x_q, axis=1 )**3))
 
     print "\nProjecting charges over surface..."
-    charged_grid_fun  = bempp.api.GridFunction(sigma_space_in, fun=d_green_func)
+    charged_grid_fun  = bempp.api.GridFunction(neumann_space_in, fun=d_green_func)
 
     rhs = np.concatenate([charged_grid_fun.coefficients,
                           np.zeros(dirichl_space_ex.global_dof_count),
@@ -221,16 +240,16 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
     print "Defining operators..."
     # OPERATORS FOR INTERNAL SURFACE
     from bempp.api.operators.boundary import sparse, laplace, modified_helmholtz
-    idn_in  = sparse.identity(sigma_space_in, sigma_space_in, sigma_space_in)
+    idn_in  = sparse.identity(neumann_space_in, neumann_space_in, neumann_space_in)
 
-    adj_1T1 = laplace.adjoint_double_layer(sigma_space_in, sigma_space_in, sigma_space_in)
-    hyp_2T1 = laplace.hypersingular(dirichl_space_ex, sigma_space_in, sigma_space_in)
-    adj_2T1 = laplace.adjoint_double_layer(neumann_space_ex, sigma_space_in, sigma_space_in)
+    adj_1T1 = laplace.adjoint_double_layer(neumann_space_in, neumann_space_in, neumann_space_in)
+    hyp_2T1 = laplace.hypersingular(dirichl_space_ex, neumann_space_in, neumann_space_in)
+    adj_2T1 = laplace.adjoint_double_layer(neumann_space_ex, neumann_space_in, neumann_space_in)
 
     # OPERATORS FOR EXTERNAL SURFACE
     idn_ex = sparse.identity(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
 
-    slp_1T2 = laplace.single_layer(sigma_space_in, dirichl_space_ex, dirichl_space_ex)
+    slp_1T2 = laplace.single_layer(neumann_space_in, dirichl_space_ex, dirichl_space_ex)
     dlp_2T2 = laplace.double_layer(dirichl_space_ex, dirichl_space_ex, dirichl_space_ex)
     slp_2T2 = laplace.single_layer(neumann_space_ex, dirichl_space_ex, dirichl_space_ex)
 
@@ -254,7 +273,7 @@ def stern_asc(sigma_space_in, dirichl_space_ex, neumann_space_ex,
     blocked[2, 1] = .5*idn_ex - dlp_ex
     blocked[2, 2] = slp_ex
 
-    A = blocked.strong_form()
+    A = blocked.weak_form()
 
     return A, rhs
 

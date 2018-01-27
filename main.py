@@ -1,19 +1,19 @@
+#!/usr/bin/python
 import general_functions as gf, numpy as np, gc, PBL, PBL_stern
 
-mol_name = '5pti'
+mol_name = 'arg'
 
-
-dens = np.array([ 2., 4., 8., 16., 32. ])
+dens = np.array([ 2. ])#, 4., 8., 16., 32. ])
 
 for dd in dens:
-# 	PBL.solvation_energy(mol_name, dd, info=True)
-#  	gc.collect()
+ 	# PBL.solvation_energy(mol_name, dd, info=True)
+ 	# gc.collect()
 #  	PBL.solvation_energy(mol_name, dd, formulation='juffer', info=True)
 #  	gc.collect()
-  	PBL_stern.solvation_energy(mol_name, dd, info=True, phi_info=True)
+ 	#PBL_stern.solvation_energy(mol_name, dd, info=True, phi_info=True)
+	#gc.collect()
+  	PBL_stern.solvation_energy(mol_name, dd, formulation='asc', info=True, phi_info=True)
   	gc.collect()
-#  	PBL_stern.solvation_energy(mol_name, dd, formulation='asc', info=True, phi_info=True)
-#  	gc.collect()
 # 	gf.run_pygbe(mol_name, dd, 1.4, info=True)
 # 	gc.collect()
 
@@ -26,3 +26,4 @@ for dd in dens:
 #  	gc.collect()
 #  	gf.run_pygbe(mol_name, 32., rr, info=True)
 #  	gc.collect()
+
